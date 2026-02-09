@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gt help:*)",
+      "Bash(gt:*)"
+    ]
+  }
+}
