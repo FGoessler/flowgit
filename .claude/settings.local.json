@@ -2,7 +2,20 @@
   "permissions": {
     "allow": [
       "Bash(gt help:*)",
-      "Bash(gt:*)"
+      "Bash(gt:*)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(grep:*)",
+      "Bash(npm test:*)",
+      "Bash(gf --help:*)",
+      "Bash(gf co --help:*)",
+      "Bash(gh auth status:*)",
+      "Bash(node dist/index.js:*)",
+      "Bash(find:*)",
+      "Bash(gh pr list:*)",
+      "WebSearch",
+      "WebFetch(domain:cli.github.com)"
     ]
   }
 }
