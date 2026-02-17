@@ -42,10 +42,10 @@ export async function runCommand(
     mockPrompts(options.prompts);
   }
 
-  // Import command dynamically based on first arg
   const commandName = args[0];
-  const commandModule = await import(`../../src/commands/${commandName}`);
-  const commandFn = commandModule[`${commandName}Command`];
+  const commandModuleName = commandName === 'checkout' ? 'co' : commandName;
+  const commandModule = await import(`../../src/commands/${commandModuleName}`);
+  const commandFn = commandModule[`${commandModuleName}Command`];
 
   if (!commandFn) {
     throw new Error(`Command '${commandName}' not found`);

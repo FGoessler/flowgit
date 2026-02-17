@@ -1,3 +1,6 @@
+import { writeFileSync, unlinkSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { PRInfo } from '../types/index.js';
 import { getExecutor } from './executor.js';
 
@@ -7,6 +10,13 @@ import { getExecutor } from './executor.js';
 function execGh(command: string, cwd?: string): string {
   const executor = getExecutor();
   return executor.exec(`gh ${command}`, { cwd });
+}
+
+/**
+ * Escape a string for safe use in single-quoted shell arguments.
+ */
+function shellEscape(str: string): string {
+  return "'" + str.replace(/'/g, "'\\''") + "'";
 }
 
 /**
@@ -53,9 +63,11 @@ export function getPRForBranch(branchName: string): PRInfo | null {
  * Create a new PR
  */
 export function createPR(title: string, body: string, baseBranch: string): PRInfo {
+  const tmpFile = join(tmpdir(), `fgt-pr-body-${Date.now()}.md`);
   try {
-    // Create the PR (returns URL)
-    const url = execGh(`pr create --title "${title}" --body "${body}" --base ${baseBranch}`).trim();
+    writeFileSync(tmpFile, body);
+    // Use --body-file to avoid shell escaping issues with backticks, $(), etc.
+    const url = execGh(`pr create --title ${shellEscape(title)} --body-file ${shellEscape(tmpFile)} --base ${baseBranch}`).trim();
 
     // Fetch the PR details using the URL
     const output = execGh(`pr view ${url} --json number,title,url,state`);
@@ -70,6 +82,39 @@ export function createPR(title: string, body: string, baseBranch: string): PRInf
     };
   } catch (error: any) {
     throw new Error(`Failed to create PR: ${error.message}`);
+  } finally {
+    try { unlinkSync(tmpFile); } catch {}
+  }
+}
+
+/**
+ * Update the body of an existing PR
+ */
+export function updatePRBody(prNumber: number, body: string): void {
+  const tmpFile = join(tmpdir(), `fgt-pr-body-${Date.now()}.md`);
+  try {
+    writeFileSync(tmpFile, body);
+    execGh(`pr edit ${prNumber} --body-file ${shellEscape(tmpFile)}`);
+  } finally {
+    try { unlinkSync(tmpFile); } catch {}
+  }
+}
+
+/**
+ * Batch-fetch PR statuses for all branches in a single API call.
+ * Returns a map from branch name to { state, merged }.
+ */
+export function getAllPRStatuses(): Map<string, { state: string; merged: boolean }> {
+  try {
+    const output = execGh('pr list --state all --json headRefName,state,merged --limit 200');
+    const prs = JSON.parse(output);
+    const map = new Map<string, { state: string; merged: boolean }>();
+    for (const pr of prs) {
+      map.set(pr.headRefName, { state: pr.state, merged: pr.merged || false });
+    }
+    return map;
+  } catch {
+    return new Map();
   }
 }
 

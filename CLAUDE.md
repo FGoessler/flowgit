@@ -1,14 +1,15 @@
-# FlowGit - Claude Context
+# Flo(w)Git - Claude Context
 
 ## Project Overview
 
-FlowGit (`gf`) is a workflow-optimized git wrapper inspired by Graphite. It simplifies branch management, commits, and PR creation with smart defaults and branch stacking support.
+Flo(w)Git (`fgt`) is a workflow-optimized git wrapper inspired by Graphite. Flo's variant of git that flows. It simplifies branch management, commits, and PR creation with smart defaults and branch stacking support.
 
 ## Key Principles
 
 ### 1. Command Naming
-- **CLI command is `gf`** (not `fg` - that's a shell built-in)
-- Keep commands short and intuitive: `create`, `modify`, `co`, `submit`, `sync`
+- **CLI command is `fgt`**
+- Keep commands short and intuitive: `create`, `modify`, `checkout` (alias: `co`), `submit`, `sync`
+- Unknown commands fall through to git (e.g. `fgt status` → `git status`)
 
 ### 2. Testing Philosophy
 - **Use real git operations** in temporary repos - they're fast and reliable
@@ -63,14 +64,14 @@ main (trunk)
 
 - Each branch stores its parent in git config
 - PRs target parent branch (not main)
-- `gf submit` walks up the stack and submits all branches
-- `gf submit --current` submits only current branch
+- `fgt submit` walks up the stack and submits all branches
+- `fgt submit --current` submits only current branch
 
 ### 5. Code Organization
 
 ```
 src/
-├── commands/          # Command implementations (create, modify, co, submit, sync)
+├── commands/          # Command implementations (create, modify, co→checkout, submit, sync)
 ├── lib/
 │   ├── executor.ts    # CommandExecutor interface & implementations
 │   ├── git.ts         # Git operations (uses executor)
@@ -104,7 +105,7 @@ git.execGit('config user.email "test@example.com"');
 
 #### Test Structure
 ```typescript
-describe('gf create', () => {
+describe('fgt create', () => {
   let testRepo: TestRepository;
   let mockGh: MockGitHubCLI;
 
@@ -145,16 +146,16 @@ mockGh.onCommand('pr create')
 ### 8. Implementation Status
 
 **Phase 1: Core Commands ✅**
-- `gf create` - Branch creation with parent tracking
-- `gf modify` - Amend commits
-- `gf co` - Smart checkout with tracked branch picker
-- `gf submit` - Push & PR creation (with stack support)
-- `gf sync` - Synchronize and cleanup branches
+- `fgt create` - Branch creation with parent tracking
+- `fgt modify` - Amend commits
+- `fgt checkout` (alias: `co`) - Smart checkout with tracked branch picker
+- `fgt submit` - Push & PR creation (with stack support)
+- `fgt sync` - Synchronize and cleanup branches
 
 **Phase 2: Stack Navigation (TODO)**
-- `gf up` / `gf down` - Navigate stack
-- `gf log` - Visualize stack
-- `gf restack` - Rebase stack
+- `fgt up` / `fgt down` - Navigate stack
+- `fgt log` - Visualize stack
+- `fgt restack` - Rebase stack
 
 **Phase 3: Enhancements (TODO)**
 - AI-generated PR descriptions
@@ -173,7 +174,7 @@ npm run build
 npm test
 
 # Test manually
-gf --help
+fgt --help
 ```
 
 #### Running Tests

@@ -98,8 +98,19 @@ async function createOrUpdatePR(branchName: string, trunk: string): Promise<void
   const existingPR = gh.getPRForBranch(branchName);
 
   if (existingPR) {
-    output.success(`Updated PR #${existingPR.number}: ${existingPR.title}`);
+    output.success(`Pushed PR #${existingPR.number}: ${existingPR.title}`);
     output.log(`  ${existingPR.url}`);
+
+    const updateDescription = await prompts.promptConfirmation(
+      'Update PR description?',
+      false,
+    );
+
+    if (updateDescription) {
+      const parentBranch = config.getParentBranch(branchName) || trunk;
+      await regeneratePRDescription(existingPR.number, branchName, parentBranch, existingPR.title);
+    }
+
     return;
   }
 
@@ -169,5 +180,30 @@ async function createOrUpdatePR(branchName: string, trunk: string): Promise<void
     } else {
       output.error(`Failed to create PR: ${error.message}`);
     }
+  }
+}
+
+async function regeneratePRDescription(
+  prNumber: number,
+  branchName: string,
+  parentBranch: string,
+  prTitle: string,
+): Promise<void> {
+  if (!claude.isClaudeInstalled()) {
+    output.warning('Claude CLI not installed — cannot generate description.');
+    return;
+  }
+
+  const spin = output.spinner('Generating PR description with Claude...');
+  try {
+    const body = claude.generatePRDescription(branchName, parentBranch, prTitle);
+    spin.succeed('Generated PR description');
+
+    const updateSpin = output.spinner('Updating PR description...');
+    gh.updatePRBody(prNumber, body);
+    updateSpin.succeed('Updated PR description');
+  } catch (error: any) {
+    spin.fail('Failed to generate description');
+    output.warning(error.message);
   }
 }

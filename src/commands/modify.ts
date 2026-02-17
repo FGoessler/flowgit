@@ -29,8 +29,8 @@ export async function modifyCommand(): Promise<void> {
   // Handle staging
   let hasStagedChanges = status.hasStagedChanges;
 
-  if (status.hasChanges && !status.hasStagedChanges) {
-    // Has changes but nothing staged - ask what to do
+  if (status.hasChanges && status.hasUnstagedChanges) {
+    // Has unstaged changes - ask what to do
     const choice = await prompts.promptStagingChoice();
 
     if (choice === 'cancel') {
@@ -45,12 +45,16 @@ export async function modifyCommand(): Promise<void> {
     } else if (choice === 'select') {
       const selectedFiles = await prompts.promptFileSelection(status.files);
       if (selectedFiles.length === 0) {
-        output.info('No files selected');
-        return;
+        if (!hasStagedChanges) {
+          output.info('No files selected');
+          return;
+        }
+        // Proceed with pre-staged files
+      } else {
+        git.stageFiles(selectedFiles);
+        hasStagedChanges = true;
+        output.success(`Staged ${selectedFiles.length} file(s)`);
       }
-      git.stageFiles(selectedFiles);
-      hasStagedChanges = true;
-      output.success(`Staged ${selectedFiles.length} file(s)`);
     }
   }
 

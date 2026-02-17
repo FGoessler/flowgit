@@ -2,20 +2,20 @@
 
 ## Project Setup
 
-The FlowGit CLI tool is now set up and ready for testing!
+The Flo(w)Git CLI tool is now set up and ready for testing!
 
 ### Testing the CLI
 
-After running `npm link`, the `gf` command is globally available:
+After running `npm link`, the `fgt` command is globally available:
 
 ```bash
 # Check version and help
-gf --help
-gf create --help
+fgt --help
+fgt create --help
 
 # Test in a test repository (not this one!)
 cd /path/to/test-repo
-gf create
+fgt create
 ```
 
 ## Development Workflow
@@ -24,7 +24,7 @@ gf create
 
 1. Edit source files in `src/`
 2. Rebuild: `npm run build`
-3. Test: use the `gf` command (via alias or full path)
+3. Test: use the `fgt` command (via alias or full path)
 
 ### Quick development
 
@@ -41,11 +41,11 @@ npm run dev -- --help
 flowgit/
 ├── src/
 │   ├── commands/         # Command implementations
-│   │   ├── create.ts     # gf create
-│   │   ├── modify.ts     # gf modify
-│   │   ├── co.ts         # gf co
-│   │   ├── submit.ts     # gf submit
-│   │   └── sync.ts       # gf sync
+│   │   ├── create.ts     # fgt create
+│   │   ├── modify.ts     # fgt modify
+│   │   ├── co.ts         # fgt checkout (alias: co)
+│   │   ├── submit.ts     # fgt submit
+│   │   └── sync.ts       # fgt sync
 │   ├── lib/              # Utility libraries
 │   │   ├── git.ts        # Git command wrappers
 │   │   ├── gh.ts         # GitHub CLI wrappers
@@ -67,29 +67,29 @@ flowgit/
 
 ### Phase 1: Core Commands ✅
 
-- ✅ `gf create` - Create branch with commit
+- ✅ `fgt create` - Create branch with commit
   - Smart staging (all, select files, cancel)
   - Derives branch name from commit message
   - Tracks parent branch for stacking
   - Marks branch as tracked
 
-- ✅ `gf modify` - Amend commits
+- ✅ `fgt modify` - Amend commits
   - Smart staging
   - Warns if branch has been pushed
 
-- ✅ `gf co` - Smart checkout
+- ✅ `fgt checkout` (alias: `co`) - Smart checkout
   - Interactive picker for tracked branches
   - Sorted by most recently checked out
   - Can checkout by name (fetches from remote if needed)
 
-- ✅ `gf submit` - Push and create PRs
+- ✅ `fgt submit` - Push and create PRs
   - Submits full stack by default
   - `--current` flag to submit only current branch
   - Smart force push detection
   - Creates PRs targeting parent branch
   - Extracts Linear ticket IDs
 
-- ✅ `gf sync` - Synchronize branches
+- ✅ `fgt sync` - Synchronize branches
   - Fetches and updates trunk
   - Detects merged branches
   - Fast-forwards branches behind remote
@@ -97,10 +97,10 @@ flowgit/
 
 ### Phase 2: Stack Commands (TODO)
 
-- [ ] `gf up` - Navigate to child branch
-- [ ] `gf down` - Navigate to parent branch
-- [ ] `gf log` - Visualize stack
-- [ ] `gf restack` - Rebase stack
+- [ ] `fgt up` - Navigate to child branch
+- [ ] `fgt down` - Navigate to parent branch
+- [ ] `fgt log` - Visualize stack
+- [ ] `fgt restack` - Rebase stack
 
 ### Phase 3+: Future Enhancements
 
@@ -113,7 +113,7 @@ flowgit/
 
 ## Testing Checklist
 
-### Test `gf create`
+### Test `fgt create`
 - [ ] Create branch with staged changes
 - [ ] Create branch with unstaged changes (stage all)
 - [ ] Create branch with unstaged changes (select files)
@@ -121,27 +121,27 @@ flowgit/
 - [ ] Create stacked branch (from non-main branch)
 - [ ] Verify branch naming (kebab-case)
 
-### Test `gf modify`
+### Test `fgt modify`
 - [ ] Amend with staged changes
 - [ ] Amend with unstaged changes (stage all)
 - [ ] Amend with unstaged changes (select files)
 - [ ] Error on no commits
 - [ ] Error on no changes
 
-### Test `gf co`
+### Test `fgt checkout` / `fgt co`
 - [ ] Interactive checkout from tracked branches
 - [ ] Checkout by name (existing local)
 - [ ] Checkout by name (fetch from remote)
 - [ ] Error on non-existent branch
 
-### Test `gf submit`
+### Test `fgt submit`
 - [ ] Submit single branch (new PR)
 - [ ] Submit single branch (update existing PR)
 - [ ] Submit stacked branches
 - [ ] Submit with `--current` flag
 - [ ] Force push prompt when remote ahead
 
-### Test `gf sync`
+### Test `fgt sync`
 - [ ] Fetch and update trunk
 - [ ] Delete merged branches
 - [ ] Fast-forward branches behind remote
@@ -149,7 +149,7 @@ flowgit/
 
 ## Known Issues
 
-1. **Command name conflict**: `gf` conflicts with shell built-in (see workaround above)
+1. **Command name**: `fgt` (no shell built-in conflict)
 2. **No tests yet**: Manual testing required
 3. **Linear integration**: Not implemented (regex detection only)
 4. **AI PR descriptions**: Not implemented
@@ -160,4 +160,4 @@ flowgit/
 2. Implement stack navigation commands (`up`, `down`, `log`, `restack`)
 3. Write unit tests
 4. Add integration tests
-5. Consider alternative command name to avoid shell built-in conflict
+5. Publish to npm for easy installation

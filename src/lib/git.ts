@@ -151,10 +151,22 @@ export function hasRemote(branchName: string, cwd?: string): boolean {
 }
 
 /**
- * Fetch from origin
+ * Fetch from origin (with --prune to remove stale remote tracking branches)
  */
 export function fetch(cwd?: string): void {
-  execGit('fetch origin', cwd);
+  execGit('fetch --prune origin', cwd);
+}
+
+/**
+ * Check if a branch has upstream tracking configured (was pushed at some point)
+ */
+export function hasUpstream(branchName: string, cwd?: string): boolean {
+  try {
+    execGit(`config --get branch.${branchName}.remote`, cwd);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -228,10 +240,17 @@ export function isMerged(branchName: string, targetBranch: string, cwd?: string)
 }
 
 /**
- * Delete a branch
+ * Delete a branch (safe - only if merged)
  */
 export function deleteBranch(branchName: string, cwd?: string): void {
   execGit(`branch -d ${branchName}`, cwd);
+}
+
+/**
+ * Force delete a branch (for squash-merged branches that git doesn't recognize as merged)
+ */
+export function forceDeleteBranch(branchName: string, cwd?: string): void {
+  execGit(`branch -D ${branchName}`, cwd);
 }
 
 /**

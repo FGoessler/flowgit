@@ -2,7 +2,7 @@
 
 ## Overview
 
-FlowGit now supports full stack navigation! This allows you to create multiple dependent PRs and easily navigate between them.
+Flo(w)Git now supports full stack navigation! This allows you to create multiple dependent PRs and easily navigate between them.
 
 ## Quick Start
 
@@ -13,17 +13,17 @@ FlowGit now supports full stack navigation! This allows you to create multiple d
 cd my-project
 
 # Create first branch
-gf create
+fgt create
 # Enter: "Add API endpoint"
 # Creates: add-api-endpoint (parent: main)
 
 # Create second branch on top
-gf create
+fgt create
 # Enter: "Add frontend for API"
 # Creates: add-frontend-for-api (parent: add-api-endpoint)
 
 # Create third branch on top
-gf create
+fgt create
 # Enter: "Add tests"
 # Creates: add-tests (parent: add-frontend-for-api)
 ```
@@ -31,7 +31,7 @@ gf create
 ### 2. Visualize Your Stack
 
 ```bash
-gf log
+fgt log
 ```
 
 Output:
@@ -46,17 +46,17 @@ main
 
 ```bash
 # Move down to parent branch
-gf down
+fgt down
 # ✓ Switched to branch 'add-frontend-for-api'
 
-gf down
+fgt down
 # ✓ Switched to branch 'add-api-endpoint'
 
 # Move up to child branch
-gf up
+fgt up
 # ✓ Switched to branch 'add-frontend-for-api'
 
-gf up
+fgt up
 # ✓ Switched to branch 'add-tests'
 ```
 
@@ -64,7 +64,7 @@ gf up
 
 ```bash
 # Submit all branches in the stack (creates 3 PRs)
-gf submit
+fgt submit
 # ✓ Pushed add-api-endpoint → main (PR #101)
 # ✓ Pushed add-frontend-for-api → add-api-endpoint (PR #102)
 # ✓ Created PR #103: Add tests (add-tests → add-frontend-for-api)
@@ -73,7 +73,7 @@ gf submit
 ### 5. View Stack with PRs
 
 ```bash
-gf log
+fgt log
 ```
 
 Output:
@@ -88,30 +88,30 @@ main
 
 ```bash
 # Navigate to middle branch
-gf down
+fgt down
 
 # Make changes
 echo "Updated API" > api-update.txt
-gf modify
+fgt modify
 
 # Restack dependent branches
-gf restack
+fgt restack
 # ✓ Rebased add-frontend-for-api onto add-api-endpoint
 # ? Rebase children branches too? Yes
 # ✓ Rebased add-tests onto add-frontend-for-api
 # ✓ Restacked 2 branches
 
 # Submit updates
-gf submit
+fgt submit
 ```
 
 ## Commands Reference
 
-### `gf up`
+### `fgt up`
 Navigate to the child branch (move up the stack, away from trunk).
 
 ```bash
-gf up
+fgt up
 ```
 
 If multiple children exist, shows a picker:
@@ -121,18 +121,18 @@ If multiple children exist, shows a picker:
     add-mobile
 ```
 
-### `gf down`
+### `fgt down`
 Navigate to the parent branch (move down the stack, toward trunk).
 
 ```bash
-gf down
+fgt down
 ```
 
-### `gf log`
+### `fgt log`
 Display a visual tree of your branch stack with PR information.
 
 ```bash
-gf log
+fgt log
 ```
 
 Shows:
@@ -141,11 +141,11 @@ Shows:
 - Current branch indicator
 - Merged status
 
-### `gf restack`
+### `fgt restack`
 Rebase the current branch onto its parent, with option to restack children.
 
 ```bash
-gf restack
+fgt restack
 ```
 
 Workflow:
@@ -179,9 +179,9 @@ main → api → validation → frontend → styling → tests
 
 1. **Keep stacks small**: 3-5 branches max for easy review
 2. **Use descriptive names**: Branch names should explain what each PR does
-3. **Restack early**: Run `gf restack` after modifying parent branches
-4. **Visualize often**: Use `gf log` to see your stack structure
-5. **Submit frequently**: Use `gf submit` to keep PRs up to date
+3. **Restack early**: Run `fgt restack` after modifying parent branches
+4. **Visualize often**: Use `fgt log` to see your stack structure
+5. **Submit frequently**: Use `fgt submit` to keep PRs up to date
 
 ## Common Workflows
 
@@ -189,10 +189,10 @@ main → api → validation → frontend → styling → tests
 
 ```bash
 # Navigate to the position where you want to insert
-gf co add-api-endpoint
+fgt checkout add-api-endpoint
 
 # Create new branch
-gf create
+fgt create
 # This becomes a child of add-api-endpoint
 
 # Existing children remain attached to add-api-endpoint
@@ -203,14 +203,14 @@ gf create
 
 Once the first PR is merged:
 ```bash
-gf sync
+fgt sync
 # Detects merged branches and offers to clean up
 # Children automatically adopt grandparent (main)
 ```
 
 ### Recovering from Rebase Conflicts
 
-If `gf restack` fails:
+If `fgt restack` fails:
 ```bash
 # Resolve conflicts manually
 git status
@@ -219,12 +219,12 @@ git add .
 git rebase --continue
 
 # Then restack children
-gf restack
+fgt restack
 ```
 
 ## Next Steps
 
 - Try creating your first stack!
-- Use `gf log` frequently to visualize your work
-- Submit stacks with `gf submit` (it handles all PRs at once)
-- Clean up merged branches with `gf sync`
+- Use `fgt log` frequently to visualize your work
+- Submit stacks with `fgt submit` (it handles all PRs at once)
+- Clean up merged branches with `fgt sync`

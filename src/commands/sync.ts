@@ -1,4 +1,5 @@
 import * as git from '../lib/git.js';
+import * as gh from '../lib/gh.js';
 import * as config from '../lib/config.js';
 import * as prompts from '../lib/prompts.js';
 import * as output from '../lib/output.js';
@@ -13,7 +14,7 @@ export async function syncCommand(): Promise<void> {
   const trunk = config.getTrunkBranch();
   const currentBranch = git.getCurrentBranch();
 
-  // Fetch from origin
+  // Fetch from origin with --prune to remove stale remote tracking branches
   const fetchSpin = output.spinner('Fetching from origin...');
   git.fetch();
   fetchSpin.succeed('Fetched from origin');
@@ -32,32 +33,73 @@ export async function syncCommand(): Promise<void> {
 
   // Go back to original branch if not on trunk
   if (currentBranch !== trunk) {
-    git.checkoutBranch(currentBranch);
+    try {
+      git.checkoutBranch(currentBranch);
+    } catch {
+      // Branch may have issues, stay on trunk
+    }
+  }
+
+  // Batch-fetch PR statuses from GitHub (single API call)
+  let prStatuses = new Map<string, { state: string; merged: boolean }>();
+  const ghAuthenticated = gh.isGhAuthenticated();
+  if (ghAuthenticated) {
+    const prSpin = output.spinner('Checking PR statuses...');
+    try {
+      prStatuses = gh.getAllPRStatuses();
+      prSpin.succeed(`Checked ${prStatuses.size} PR(s)`);
+    } catch {
+      prSpin.fail('Could not fetch PR statuses');
+    }
   }
 
   // Analyze tracked branches
   const trackedBranches = config.getTrackedBranches().filter(b => b !== trunk);
   const mergedBranches: string[] = [];
+  const closedBranches: string[] = [];
   const divergedBranches: string[] = [];
   let syncedCount = 0;
 
   output.separator();
 
   for (const branchName of trackedBranches) {
-    // Check if branch still exists
+    // Check if branch still exists locally
     if (!git.branchExists(branchName)) {
       config.removeTrackedBranch(branchName);
       continue;
     }
 
-    // Check if merged
+    // 1. Check if merged locally (works for regular merges)
     if (git.isMerged(branchName, trunk)) {
       mergedBranches.push(branchName);
       continue;
     }
 
-    // Check if behind remote
-    if (git.hasRemote(branchName)) {
+    // 2. Check PR status on GitHub (catches squash merges, closed PRs)
+    const prStatus = prStatuses.get(branchName);
+    if (prStatus) {
+      if (prStatus.merged || prStatus.state === 'MERGED') {
+        mergedBranches.push(branchName);
+        continue;
+      }
+      if (prStatus.state === 'CLOSED') {
+        closedBranches.push(branchName);
+        continue;
+      }
+    }
+
+    // 3. Check if remote branch was deleted (after --prune fetch)
+    //    If a branch was pushed before but origin/<branch> is now gone,
+    //    the remote branch was deleted (typically after merge on GitHub)
+    const wasEverPushed = git.hasUpstream(branchName);
+    const remoteExists = git.hasRemote(branchName);
+    if (wasEverPushed && !remoteExists) {
+      mergedBranches.push(branchName);
+      continue;
+    }
+
+    // 4. Check if behind/ahead of remote for fast-forward
+    if (remoteExists) {
       const { ahead, behind } = git.compareWithRemote(branchName);
 
       if (behind > 0 && ahead === 0) {
@@ -79,7 +121,11 @@ export async function syncCommand(): Promise<void> {
 
   // Go back to original branch
   if (currentBranch !== trunk && git.branchExists(currentBranch)) {
-    git.checkoutBranch(currentBranch);
+    try {
+      git.checkoutBranch(currentBranch);
+    } catch {
+      // Stay where we are
+    }
   }
 
   // Handle merged branches
@@ -88,25 +134,26 @@ export async function syncCommand(): Promise<void> {
     output.info('Merged branches:');
     mergedBranches.forEach(b => output.log(`  - ${b}`));
 
-    const shouldDelete = await prompts.promptConfirmation('Delete merged branches?', false);
+    const shouldDelete = await prompts.promptConfirmation('Delete merged branches?', true);
 
     if (shouldDelete) {
       for (const branchName of mergedBranches) {
-        // Don't delete if currently on this branch
-        if (branchName === currentBranch) {
-          git.checkoutBranch(trunk);
-        }
+        await deleteBranchCleanly(branchName, currentBranch, trunk);
+      }
+    }
+  }
 
-        try {
-          // Before deleting, adopt children to grandparent
-          adoptChildrenToGrandparent(branchName, trunk);
+  // Handle closed branches (PR closed without merge)
+  if (closedBranches.length > 0) {
+    output.separator();
+    output.info('Branches with closed PRs (not merged):');
+    closedBranches.forEach(b => output.log(`  - ${b}`));
 
-          git.deleteBranch(branchName);
-          config.removeTrackedBranch(branchName);
-          output.success(`Deleted ${branchName}`);
-        } catch (error: any) {
-          output.error(`Failed to delete ${branchName}: ${error.message}`);
-        }
+    const shouldDelete = await prompts.promptConfirmation('Delete branches with closed PRs?', false);
+
+    if (shouldDelete) {
+      for (const branchName of closedBranches) {
+        await deleteBranchCleanly(branchName, currentBranch, trunk);
       }
     }
   }
@@ -120,7 +167,38 @@ export async function syncCommand(): Promise<void> {
 
   // Summary
   output.separator();
-  output.success(`Synced ${syncedCount} tracked branch(es)`);
+  const deleted = mergedBranches.length + closedBranches.length;
+  if (deleted > 0) {
+    output.success(`Cleaned up ${deleted} branch(es), synced ${syncedCount} branch(es)`);
+  } else {
+    output.success(`Synced ${syncedCount} tracked branch(es)`);
+  }
+}
+
+/**
+ * Delete a branch cleanly: adopt children, switch if needed, delete, untrack.
+ */
+async function deleteBranchCleanly(branchName: string, currentBranch: string, trunk: string): Promise<void> {
+  // Don't delete if currently on this branch
+  if (branchName === currentBranch) {
+    git.checkoutBranch(trunk);
+  }
+
+  try {
+    // Before deleting, adopt children to grandparent
+    adoptChildrenToGrandparent(branchName, trunk);
+
+    // Try normal delete first, fall back to force delete for squash-merged branches
+    try {
+      git.deleteBranch(branchName);
+    } catch {
+      git.forceDeleteBranch(branchName);
+    }
+    config.removeTrackedBranch(branchName);
+    output.success(`Deleted ${branchName}`);
+  } catch (error: any) {
+    output.error(`Failed to delete ${branchName}: ${error.message}`);
+  }
 }
 
 /**

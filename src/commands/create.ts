@@ -17,8 +17,8 @@ export async function createCommand(): Promise<void> {
   // Handle staging
   let hasStagedChanges = status.hasStagedChanges;
 
-  if (status.hasChanges && !status.hasStagedChanges) {
-    // Has changes but nothing staged - ask what to do
+  if (status.hasChanges && status.hasUnstagedChanges) {
+    // Has unstaged changes - ask what to do
     const choice = await prompts.promptStagingChoice();
 
     if (choice === 'cancel') {
@@ -33,12 +33,16 @@ export async function createCommand(): Promise<void> {
     } else if (choice === 'select') {
       const selectedFiles = await prompts.promptFileSelection(status.files);
       if (selectedFiles.length === 0) {
-        output.info('No files selected');
-        return;
+        if (!hasStagedChanges) {
+          output.info('No files selected');
+          return;
+        }
+        // Proceed with pre-staged files
+      } else {
+        git.stageFiles(selectedFiles);
+        hasStagedChanges = true;
+        output.success(`Staged ${selectedFiles.length} file(s)`);
       }
-      git.stageFiles(selectedFiles);
-      hasStagedChanges = true;
-      output.success(`Staged ${selectedFiles.length} file(s)`);
     }
   }
 
@@ -63,11 +67,36 @@ export async function createCommand(): Promise<void> {
 
   // Check if branch already exists
   if (git.branchExists(branchName)) {
-    output.error(`Branch '${branchName}' already exists`);
-    process.exit(1);
+    if (currentBranch === branchName) {
+      // Already on this branch - just commit here
+      if (hasStagedChanges) {
+        git.commit(commitMessage);
+        output.success(`Committed on '${branchName}'`);
+      } else {
+        output.info('No changes to commit');
+      }
+      return;
+    }
+
+    // Branch exists but we're on a different branch
+    const commitHere = await prompts.promptConfirmation(
+      `Branch '${branchName}' already exists. Commit on current branch '${currentBranch}' instead?`,
+      true,
+    );
+
+    if (!commitHere) {
+      output.info('Cancelled');
+      return;
+    }
+
+    if (hasStagedChanges) {
+      git.commit(commitMessage);
+      output.success(`Committed on '${currentBranch}'`);
+    }
+    return;
   }
 
-  // Create the branch (no confirmation needed)
+  // Create the branch
   git.createBranch(branchName);
 
   // Commit changes if there are any

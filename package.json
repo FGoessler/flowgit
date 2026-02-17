@@ -1,10 +1,10 @@
 {
   "name": "flowgit",
   "version": "0.1.0",
-  "description": "A workflow-optimized wrapper around git and gh CLI, inspired by Graphite, designed for fast-paced feature development with PR-based workflows.",
+  "description": "Flo(w)Git - Flo's variant of git that flows. A workflow-optimized wrapper around git and gh CLI, inspired by Graphite.",
   "main": "dist/index.js",
   "bin": {
-    "gf": "dist/index.js"
+    "fgt": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

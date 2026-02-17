@@ -3,7 +3,7 @@ import { runCommand } from './helpers/runCommand';
 import { MockExecutor } from './helpers/mockExecutor';
 import { setExecutor, resetExecutor } from '../src/lib/executor';
 
-describe('gf co', () => {
+describe('fgt checkout (alias: co)', () => {
   let testRepo: TestRepository;
   let mockExecutor: MockExecutor;
 
@@ -27,12 +27,21 @@ describe('gf co', () => {
       testRepo.git('commit -m "Add feature"');
       testRepo.git('checkout main');
 
-      // Act
-      await runCommand(['co', 'feature-branch'], testRepo);
+      // Act - both checkout and co work
+      await runCommand(['checkout', 'feature-branch'], testRepo);
 
       // Assert
       expect(testRepo.currentBranch()).toBe('feature-branch');
       expect(testRepo.trackedBranches()).toContain('feature-branch');
+    });
+
+    it('co alias checks out existing branch', async () => {
+      testRepo.git('checkout -b alias-branch');
+      testRepo.git('checkout main');
+
+      await runCommand(['co', 'alias-branch'], testRepo);
+
+      expect(testRepo.currentBranch()).toBe('alias-branch');
     });
 
     it('marks checked out branch as tracked', async () => {

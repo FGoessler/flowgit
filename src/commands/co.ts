@@ -49,7 +49,7 @@ async function checkoutInteractive(): Promise<void> {
   const trackedBranches = config.getTrackedBranches();
 
   if (trackedBranches.length === 0) {
-    output.error('No tracked branches. Use "gf co <branch-name>" to checkout a branch.');
+    output.error('No tracked branches. Use "fgt checkout <branch-name>" to checkout a branch.');
     process.exit(1);
   }
 

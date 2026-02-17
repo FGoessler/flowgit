@@ -6,9 +6,6 @@ import * as output from './output.js';
  * Handle prompt cancellation (ESC key or Ctrl+C)
  */
 function handleCancellation(error: any): never {
-  // For debugging: log the error details
-  console.error('Prompt error:', { name: error.name, message: error.message, code: error.code });
-
   // Check for various cancellation error types
   const isCancellation =
     error.name === 'ExitPromptError' ||

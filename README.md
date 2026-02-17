@@ -1,10 +1,10 @@
-# FlowGit (gf)
+# Flo(w)Git (fgt)
 
-A workflow-optimized wrapper around git and gh CLI, inspired by Graphite, designed for fast-paced feature development with PR-based workflows.
+**Flo(w)Git** — Flo's variant of git that flows. A workflow-optimized wrapper around git and gh CLI, inspired by Graphite, designed for fast-paced feature development with PR-based workflows.
 
 ## Overview
 
-FlowGit simplifies common git workflows by providing smart, interactive commands that handle the tedious parts of branch management, commits, and PR creation. It tracks your working branches and provides an optimized interface for switching between them.
+Flo(w)Git simplifies common git workflows by providing smart, interactive commands that handle the tedious parts of branch management, commits, and PR creation. It tracks your working branches and provides an optimized interface for switching between them.
 
 ## Installation
 
@@ -22,12 +22,12 @@ npx flowgit <command>
 
 ### Tracked Branches
 
-FlowGit maintains a list of "tracked branches" - branches that you're actively working on. This allows commands like `gf co` to show only relevant branches instead of cluttering your view with every branch in the repository.
+Flo(w)Git maintains a list of "tracked branches" - branches that you're actively working on. This allows commands like `fgt checkout` to show only relevant branches instead of cluttering your view with every branch in the repository.
 
 **How branches become tracked:**
 
-- Created via `gf create`
-- Explicitly checked out by name via `gfco <branch-name>`
+- Created via `fgt create`
+- Explicitly checked out by name via `fgt checkout <branch-name>`
 
 **Where tracked branches are stored:**
 
@@ -42,13 +42,13 @@ Branches are automatically named in `kebab-case` derived from commit messages:
 
 ### Branch Stacking
 
-FlowGit supports **stacking** - creating multiple PRs that build on top of each other. This keeps PRs small and focused while allowing you to continue working on dependent features.
+Flo(w)Git supports **stacking** - creating multiple PRs that build on top of each other. This keeps PRs small and focused while allowing you to continue working on dependent features.
 
 **How stacking works:**
 - Each branch can have a **parent branch** (defaults to `main`)
-- When you run `gf create` from a branch, the new branch's parent is the current branch
+- When you run `fgt create` from a branch, the new branch's parent is the current branch
 - PRs target their parent branch, not main
-- When you run `gf submit`, it submits all branches from main to current (the entire stack)
+- When you run `fgt submit`, it submits all branches from main to current (the entire stack)
 
 **Example stack:**
 ```
@@ -65,7 +65,18 @@ main
 
 ## Commands
 
-### `gf create`
+### Git passthrough
+
+Unknown commands are passed through to git. This lets you use `fgt` as a drop-in replacement in many workflows:
+
+- `fgt status` → `git status`
+- `fgt branch` → `git branch`
+- `fgt diff` → `git diff`
+- `fgt commit -m "message"` → `git commit -m "message"`
+
+Only the commands listed below are handled by fgt; all other subcommands are forwarded to git unchanged.
+
+### `fgt create`
 
 Creates a new branch based on current changes, prompts for a commit message, and derives the branch name automatically.
 
@@ -82,7 +93,7 @@ Creates a new branch based on current changes, prompts for a commit message, and
 5. Derives branch name from commit message (kebab-case)
 6. Creates the branch and commits staged changes
 7. Marks the branch as tracked
-8. **Records parent branch** (the branch you were on when running `gf create`)
+8. **Records parent branch** (the branch you were on when running `fgt create`)
 9. Displays: `✓ Created branch 'branch-name' and committed changes`
    - If stacking: `✓ Created branch 'branch-name' (parent: parent-branch) and committed changes`
 
@@ -90,7 +101,7 @@ Creates a new branch based on current changes, prompts for a commit message, and
 
 ```bash
 # Interactive flow
-$ gf create
+$ fgt create
 ? You have unstaged changes. What would you like to do?
   > Stage all
     Select files
@@ -104,12 +115,12 @@ $ gf create
 **Edge Cases:**
 
 - If no changes exist, create an empty branch (after confirmation)
-- If already on a branch created via gfcreate, create a new branch from current branch
+- If already on a branch created via fgt create, create a new branch from current branch
 - Validate branch name doesn't already exist
 
 ---
 
-### `gf submit`
+### `fgt submit`
 
 Pushes the current branch (and its stack) to GitHub and creates/updates pull requests.
 
@@ -138,7 +149,7 @@ Pushes the current branch (and its stack) to GitHub and creates/updates pull req
      - Displays: `✓ Pushed changes to PR #123: <title>`
 
 **Flags:**
-- `gfsubmit --current` - Only submit the current branch, not the full stack
+- `fgt submit --current` - Only submit the current branch, not the full stack
 
 **PR Title Generation:**
 
@@ -150,13 +161,13 @@ Pushes the current branch (and its stack) to GitHub and creates/updates pull req
 
 ```bash
 # Single branch (no stack)
-$ gf submit
+$ fgt submit
 ↑ Pushing add-user-auth to origin...
 ✓ Created PR #123: Add user authentication (add-user-auth → main)
   https://github.com/user/repo/pull/123
 
 # Stacked branches
-$ gf submit
+$ fgt submit
 ↑ Pushing 3 branches in stack...
 ✓ Pushed add-api → main (PR #101)
 ✓ Pushed add-frontend → add-api (PR #102)
@@ -164,7 +175,7 @@ $ gf submit
   https://github.com/user/repo/pull/103
 
 # Only submit current branch
-$ gf submit --current
+$ fgt submit --current
 ↑ Pushing add-tests to origin...
 ✓ Pushed changes to PR #103: Add tests
 ```
@@ -180,7 +191,7 @@ $ gf submit --current
 
 ---
 
-### `gf modify`
+### `fgt modify`
 
 Amends the current commit with new changes. A quick way to add changes to the last commit without creating a new commit.
 
@@ -201,7 +212,7 @@ Amends the current commit with new changes. A quick way to add changes to the la
 **Examples:**
 
 ```bash
-$ gf modify
+$ fgt modify
 ? You have unstaged changes. What would you like to do?
   > Stage all
     Select files
@@ -218,18 +229,18 @@ $ gf modify
 
 ---
 
-### `gf co`
+### `fgt checkout` (alias: `co`)
 
 Smart branch checkout with fuzzy search through tracked branches.
 
 **Behavior:**
 
-1. If branch name is provided: `gfco <branch-name>`
+1. If branch name is provided: `fgt checkout <branch-name>`
    - Checks if branch exists locally
    - If exists: checks out the branch and marks it as tracked
    - If not exists locally: tries to fetch from `origin/<branch-name>` and checkout
    - If not found remotely: displays error "Branch '<branch-name>' not found"
-2. If no branch name provided: `gf co`
+2. If no branch name provided: `fgt checkout`
    - Shows interactive picker with tracked branches
    - Sorts by most recently checked out (use git reflog)
    - Displays branch name and last commit message
@@ -239,7 +250,7 @@ Smart branch checkout with fuzzy search through tracked branches.
 **Interactive Display:**
 
 ```bash
-$ gf co
+$ fgt checkout
 ? Select a branch:
   > add-user-authentication (Add user authentication) - 2 minutes ago
     fix-login-button (Fix login button not working) - 1 hour ago
@@ -250,22 +261,22 @@ $ gf co
 
 ```bash
 # Interactive mode
-$ gf co
+$ fgt checkout
 ? Select a branch: [interactive picker]
 
-# Direct checkout
-$ gf co feature-branch
+# Direct checkout (co is an alias)
+$ fgt checkout feature-branch
 ✓ Switched to branch 'feature-branch'
 
 # Fetch from remote
-$ gf co remote-branch
+$ fgt co remote-branch
 ↓ Fetching branch from origin...
 ✓ Switched to branch 'remote-branch'
 ```
 
 ---
 
-### `gf sync`
+### `fgt sync`
 
 Synchronizes tracked branches with remote and cleans up merged branches.
 
@@ -296,7 +307,7 @@ Synchronizes tracked branches with remote and cleans up merged branches.
 **Examples:**
 
 ```bash
-$ gf sync
+$ fgt sync
 ↓ Fetching from origin...
 ↓ Updating main...
 
@@ -325,7 +336,7 @@ Behind remote:
 
 ---
 
-### `gf up`
+### `fgt up`
 
 Navigate to the child branch in the stack (move up the stack, away from trunk).
 
@@ -340,11 +351,11 @@ Navigate to the child branch in the stack (move up the stack, away from trunk).
 
 ```bash
 # On add-api, navigate to add-frontend
-$ gf up
+$ fgt up
 ✓ Switched to branch 'add-frontend'
 
 # Multiple children
-$ gf up
+$ fgt up
 ? Multiple branches built on 'add-api':
   > add-frontend
     add-mobile
@@ -352,7 +363,7 @@ $ gf up
 
 ---
 
-### `gf down`
+### `fgt down`
 
 Navigate to the parent branch in the stack (move down the stack, toward trunk).
 
@@ -366,17 +377,17 @@ Navigate to the parent branch in the stack (move down the stack, toward trunk).
 
 ```bash
 # On add-frontend, navigate to add-api
-$ gf down
+$ fgt down
 ✓ Switched to branch 'add-api'
 
 # Already at trunk
-$ gf down
+$ fgt down
 ✗ Already at trunk (main)
 ```
 
 ---
 
-### `gf log`
+### `fgt log`
 
 Displays a visual representation of your current branch stack.
 
@@ -392,13 +403,13 @@ Displays a visual representation of your current branch stack.
 **Examples:**
 
 ```bash
-$ gf log
+$ fgt log
 main
   └─> add-api-endpoint (#101 ✓)
        └─> add-frontend (#102 ✓)
             └─> add-tests (#103) ← current
 
-$ gf log
+$ fgt log
 main
   ├─> add-api-endpoint (#101 ✓)
   │    └─> add-frontend (#102 ✓)
@@ -414,7 +425,7 @@ main
 
 ---
 
-### `gf restack`
+### `fgt restack`
 
 Rebases the current branch (and its descendants) on top of the latest parent.
 
@@ -433,13 +444,13 @@ Rebases the current branch (and its descendants) on top of the latest parent.
 
 ```bash
 # Simple rebase
-$ gf restack
+$ fgt restack
 ↓ Fetching from origin...
 ↓ Rebasing add-frontend onto add-api...
 ✓ Rebased add-frontend onto add-api
 
 # Rebase with children
-$ gf restack
+$ fgt restack
 ↓ Fetching from origin...
 ↓ Rebasing add-frontend onto add-api...
 ✓ Rebased add-frontend onto add-api
@@ -602,19 +613,19 @@ flowgit/
 ### Phase 1: Core Commands (MVP)
 
 - [x] Project setup & specification
-- [x] `gf create` - Basic branch creation (with parent tracking)
-- [x] `gf modify` - Amend commits
-- [x] `gf co` - Branch checkout
-- [x] `gf submit` - Push & PR creation (single branch)
-- [x] `gf sync` - Branch synchronization
+- [x] `fgt create` - Basic branch creation (with parent tracking)
+- [x] `fgt modify` - Amend commits
+- [x] `fgt checkout` (alias: `co`) - Branch checkout
+- [x] `fgt submit` - Push & PR creation (single branch)
+- [x] `fgt sync` - Branch synchronization
 
 ### Phase 2: Stacking Support
 
-- [x] `gf submit` - Stack submission (submit all branches in stack)
-- [x] `gf up` / `gf down` - Stack navigation
-- [x] `gf log` - Stack visualization
-- [x] `gf restack` - Rebase stack
-- [x] `gf sync` - Handle stacked branches (adopt grandparent when parent merged)
+- [x] `fgt submit` - Stack submission (submit all branches in stack)
+- [x] `fgt up` / `fgt down` - Stack navigation
+- [x] `fgt log` - Stack visualization
+- [x] `fgt restack` - Rebase stack
+- [x] `fgt sync` - Handle stacked branches (adopt grandparent when parent merged)
 
 ### Phase 3: Enhancements
 
@@ -622,7 +633,7 @@ flowgit/
 - [ ] Unit tests for all commands
 - [ ] Integration tests
 - [ ] Improved interactive UX
-- [ ] `gfsubmit --current` flag for single-branch submit
+- [ ] `fgt submit --current` flag for single-branch submit
 
 ### Phase 4: Advanced Features
 
@@ -630,7 +641,7 @@ flowgit/
 - [ ] Linear API integration
 - [ ] Configurable default branch
 - [ ] Branch naming prefixes
-- [ ] Multi-level stack visualization in `gf log`
+- [ ] Multi-level stack visualization in `fgt log`
 
 ---
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { spawnSync } from 'node:child_process';
 import { Command } from 'commander';
 import { createCommand } from './commands/create.js';
 import { modifyCommand } from './commands/modify.js';
@@ -15,9 +16,18 @@ import { todoCommand } from './commands/todo.js';
 const program = new Command();
 
 program
-  .name('gf')
-  .description('FlowGit - A workflow-optimized wrapper around git and gh CLI')
-  .version('0.1.0');
+  .name('fgt')
+  .description('Flo(w)Git - Flo\'s variant of git that flows')
+  .version('0.1.0')
+  .addHelpText(
+    'after',
+    `
+Unknown commands are passed through to git. For example:
+  fgt status    runs git status
+  fgt branch    runs git branch
+  fgt diff      runs git diff
+`
+  );
 
 program
   .command('create')
@@ -44,7 +54,8 @@ program
   });
 
 program
-  .command('co [branch]')
+  .command('checkout [branch]')
+  .alias('co')
   .description('Smart branch checkout')
   .action(async (branch?: string) => {
     try {
@@ -139,5 +150,13 @@ program
       process.exit(1);
     }
   });
+
+const KNOWN_COMMANDS = ['create', 'modify', 'checkout', 'co', 'submit', 'sync', 'up', 'down', 'log', 'restack', 'todo'];
+
+const firstArg = process.argv[2];
+if (firstArg && !firstArg.startsWith('-') && !KNOWN_COMMANDS.includes(firstArg)) {
+  const result = spawnSync('git', process.argv.slice(2), { stdio: 'inherit' });
+  process.exit(result.status ?? 1);
+}
 
 program.parse();
