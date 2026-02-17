@@ -6,6 +6,12 @@ jest.mock('@inquirer/prompts', () => ({
   select: jest.fn(async (options: any) => {
     if (mockAnswers.branch !== undefined) return mockAnswers.branch;
     if (mockAnswers.choice !== undefined) return mockAnswers.choice;
+    // Simulate ESC key press (throws like real @inquirer/prompts)
+    if (mockAnswers.escape) {
+      const err = new Error('User force closed the prompt with SIGINT');
+      err.name = 'ExitPromptError';
+      throw err;
+    }
     return options.choices?.[0]?.value;
   }),
   input: jest.fn(async (options: any) => {
@@ -27,45 +33,6 @@ jest.mock('@inquirer/prompts', () => ({
     mockAnswers = {};
   },
 }));
-
-// Keep old inquirer mock for backwards compatibility
-jest.mock('inquirer', () => {
-  return {
-    __esModule: true,
-    default: {
-      prompt: jest.fn(async (questions: any) => {
-        const questionArray = Array.isArray(questions) ? questions : [questions];
-        const result: Record<string, any> = {};
-
-        for (const question of questionArray) {
-          const name = question.name;
-          if (mockAnswers[name] !== undefined) {
-            result[name] = mockAnswers[name];
-          } else if (question.default !== undefined) {
-            result[name] = question.default;
-          } else {
-            // Provide sensible defaults
-            if (question.type === 'confirm') {
-              result[name] = true;
-            } else if (question.type === 'list') {
-              result[name] = question.choices?.[0]?.value;
-            } else {
-              result[name] = '';
-            }
-          }
-        }
-
-        return result;
-      }),
-      setMockAnswers: (answers: Record<string, any>) => {
-        mockAnswers = answers;
-      },
-      clearMockAnswers: () => {
-        mockAnswers = {};
-      },
-    },
-  };
-});
 
 // Mock chalk for tests (no-op colored output)
 jest.mock('chalk', () => {
@@ -107,5 +74,3 @@ process.exit = jest.fn((code?: number) => {
   throw new Error(`process.exit(${code})`);
 }) as any;
 
-// Export the mock inquirer for test access
-export const getMockInquirer = () => require('inquirer').default;

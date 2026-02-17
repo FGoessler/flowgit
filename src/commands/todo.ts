@@ -4,7 +4,6 @@ import * as gh from '../lib/gh.js';
 import * as output from '../lib/output.js';
 import { select } from '@inquirer/prompts';
 import chalk from 'chalk';
-import { execSync } from 'child_process';
 
 interface PRItem {
   number: number;
@@ -43,28 +42,33 @@ export async function todoCommand(): Promise<void> {
 
   const spin = output.spinner('Fetching PRs and branch status...');
 
+  let categories: Map<string, TodoCategory>;
+  let localBranches: string[];
+
   try {
     // Fetch all relevant PRs
-    const categories = await fetchAndCategorizePRs();
+    categories = fetchAndCategorizePRs();
 
     // Get local tracked branches that don't have PRs
-    const localBranches = await getLocalBranches(categories);
+    localBranches = getLocalBranches(categories);
 
     spin.succeed('Loaded PRs and branches');
-
-    // Display the todo list
-    await displayTodoList(categories, localBranches);
   } catch (error: any) {
     spin.fail('Failed to fetch PRs');
     output.error(error.message);
     process.exit(1);
   }
+
+  // Display outside try/catch so prompt cancellation propagates cleanly
+  await displayTodoList(categories!, localBranches!);
 }
+
+const PR_FIELDS = 'number,title,url,headRefName,isDraft,state,reviewDecision,statusCheckRollup';
 
 /**
  * Fetch PRs and organize into categories
  */
-async function fetchAndCategorizePRs(): Promise<Map<string, TodoCategory>> {
+function fetchAndCategorizePRs(): Map<string, TodoCategory> {
   const categories = new Map<string, TodoCategory>();
 
   // Initialize categories
@@ -96,7 +100,7 @@ async function fetchAndCategorizePRs(): Promise<Map<string, TodoCategory>> {
 
   // Fetch PRs where you're requested as reviewer
   try {
-    const reviewRequested = await fetchPRs('review-requested:@me state:open');
+    const reviewRequested = fetchPRs('review-requested:@me state:open');
     reviewRequested.forEach(pr => {
       pr.category = 'needs-my-review';
       categories.get('needs-my-review')!.items.push(pr);
@@ -107,7 +111,7 @@ async function fetchAndCategorizePRs(): Promise<Map<string, TodoCategory>> {
 
   // Fetch your PRs
   try {
-    const myPRs = await fetchPRs('author:@me state:open');
+    const myPRs = fetchPRs('author:@me state:open');
 
     myPRs.forEach(pr => {
       if (pr.isDraft) {
@@ -132,72 +136,34 @@ async function fetchAndCategorizePRs(): Promise<Map<string, TodoCategory>> {
 }
 
 /**
- * Fetch PRs using gh CLI
+ * Fetch PRs using gh CLI via executor
  */
-async function fetchPRs(searchQuery: string): Promise<PRItem[]> {
-  try {
-    const result = execSync(
-      `gh pr list --search "${searchQuery}" --json number,title,url,headRefName,isDraft,state,reviewDecision,statusCheckRollup --limit 100`,
-      { encoding: 'utf-8' }
-    );
+function fetchPRs(searchQuery: string): PRItem[] {
+  const prs = gh.searchPRs(searchQuery, PR_FIELDS);
 
-    const prs = JSON.parse(result);
+  return prs.map((pr: any) => {
+    const total = gh.getPRCommentCount(pr.number);
+    const resolved = gh.getPRResolvedThreadCount(pr.number);
 
-    return await Promise.all(
-      prs.map(async (pr: any) => {
-        // Fetch comment counts
-        const comments = await fetchCommentCounts(pr.number);
-
-        return {
-          number: pr.number,
-          title: pr.title,
-          url: pr.url,
-          branch: pr.headRefName,
-          isDraft: pr.isDraft,
-          state: pr.state,
-          reviewDecision: pr.reviewDecision,
-          statusCheckRollup: pr.statusCheckRollup,
-          comments,
-          category: '',
-        };
-      })
-    );
-  } catch (error) {
-    return [];
-  }
-}
-
-/**
- * Fetch comment counts for a PR
- */
-async function fetchCommentCounts(prNumber: number): Promise<{ total: number; resolved: number }> {
-  try {
-    const result = execSync(
-      `gh pr view ${prNumber} --json comments --jq '.comments | length'`,
-      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
-
-    const total = parseInt(result.trim()) || 0;
-
-    // Try to get resolved count (this is approximate)
-    // GitHub doesn't directly expose resolved comment count via CLI
-    const resolvedResult = execSync(
-      `gh pr view ${prNumber} --json reviewThreads --jq '[.reviewThreads[] | select(.isResolved == true)] | length'`,
-      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
-
-    const resolved = parseInt(resolvedResult.trim()) || 0;
-
-    return { total, resolved };
-  } catch (error) {
-    return { total: 0, resolved: 0 };
-  }
+    return {
+      number: pr.number,
+      title: pr.title,
+      url: pr.url,
+      branch: pr.headRefName,
+      isDraft: pr.isDraft,
+      state: pr.state,
+      reviewDecision: pr.reviewDecision,
+      statusCheckRollup: pr.statusCheckRollup,
+      comments: { total, resolved },
+      category: '',
+    };
+  });
 }
 
 /**
  * Get local tracked branches that don't have PRs
  */
-async function getLocalBranches(categories: Map<string, TodoCategory>): Promise<string[]> {
+function getLocalBranches(categories: Map<string, TodoCategory>): string[] {
   const tracked = config.getTrackedBranches();
   const trunk = config.getTrunkBranch();
 
@@ -318,24 +284,14 @@ function buildIndicators(pr: PRItem): string {
     );
 
     // Check for pending/in-progress
-    // A check is pending if it's not completed, or if it's in an active state
     const hasPending = checks.some((c: any) =>
       c.status === 'IN_PROGRESS' ||
       c.status === 'QUEUED' ||
       c.status === 'PENDING' ||
       c.status === 'REQUESTED' ||
       c.status === 'WAITING' ||
-      // If status is not COMPLETED and there's no conclusion, it's likely pending
       (c.status !== 'COMPLETED' && !c.conclusion)
     );
-
-    // Debug logging
-    if (process.env.DEBUG) {
-      console.error(`PR #${pr.number}: hasFailure=${hasFailure}, hasPending=${hasPending}`);
-      checks.forEach((c: any, i: number) => {
-        console.error(`  Check ${i}: status="${c.status}", conclusion="${c.conclusion}", name="${c.name}"`);
-      });
-    }
 
     // Determine overall state
     if (hasFailure) {
@@ -385,21 +341,15 @@ async function handlePRSelection(prNumber: number): Promise<boolean> {
   }
 
   if (action === 'checkout') {
-    // Get branch name for this PR
     try {
-      const result = execSync(`gh pr view ${prNumber} --json headRefName --jq .headRefName`, {
-        encoding: 'utf-8',
-      });
-      const branch = result.trim();
+      const branch = gh.getPRBranchName(prNumber);
 
-      // Checkout the branch
       if (git.branchExists(branch)) {
         git.checkoutBranch(branch);
         output.success(`Checked out branch '${branch}'`);
       } else {
-        // Fetch from remote
         git.fetch();
-        execSync(`git checkout ${branch}`, { stdio: 'inherit' });
+        git.checkoutBranch(branch);
         config.addTrackedBranch(branch);
         output.success(`Checked out branch '${branch}'`);
       }
@@ -408,9 +358,8 @@ async function handlePRSelection(prNumber: number): Promise<boolean> {
       return true; // Return to menu on error
     }
   } else if (action === 'open') {
-    // Open PR in browser
     try {
-      execSync(`gh pr view ${prNumber} --web`, { stdio: 'inherit' });
+      gh.openPRInBrowser(prNumber);
     } catch (error: any) {
       output.error(`Failed to open PR: ${error.message}`);
       return true; // Return to menu on error
@@ -449,7 +398,7 @@ async function handleBranchSelection(branch: string): Promise<boolean> {
   } else if (action === 'create-pr') {
     try {
       output.info('Opening PR creation...');
-      execSync(`gh pr create --web`, { stdio: 'inherit', cwd: process.cwd() });
+      gh.createPRWeb();
     } catch (error: any) {
       output.error(`Failed to create PR: ${error.message}`);
       return true; // Return to menu on error

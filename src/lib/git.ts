@@ -198,14 +198,6 @@ export function compareWithRemote(branchName: string, cwd?: string): { ahead: nu
 }
 
 /**
- * Get list of all local branches
- */
-export function getAllBranches(cwd?: string): string[] {
-  const output = execGit('branch --format="%(refname:short)"', cwd);
-  return output.split('\n').filter(b => b.trim());
-}
-
-/**
  * Get the first commit message on a branch after it diverged from parent
  */
 export function getFirstCommitMessage(branchName: string, parentBranch: string, cwd?: string): string {
@@ -213,17 +205,6 @@ export function getFirstCommitMessage(branchName: string, parentBranch: string, 
     return execGit(`log ${parentBranch}..${branchName} --pretty=%B --reverse | head -n 1`, cwd);
   } catch {
     return getLastCommitMessage(cwd);
-  }
-}
-
-/**
- * Get the diff between two branches
- */
-export function getDiff(fromBranch: string, toBranch: string, cwd?: string): string {
-  try {
-    return execGit(`diff ${fromBranch}...${toBranch}`, cwd);
-  } catch (error) {
-    return '';
   }
 }
 

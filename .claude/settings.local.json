@@ -16,7 +16,9 @@
       "Bash(gh pr list:*)",
       "WebSearch",
       "WebFetch(domain:cli.github.com)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(wc:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

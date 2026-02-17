@@ -1,6 +1,6 @@
 import * as git from '../lib/git.js';
-import * as prompts from '../lib/prompts.js';
 import * as output from '../lib/output.js';
+import { handleStaging } from '../lib/staging.js';
 
 export async function modifyCommand(): Promise<void> {
   // Check if in a git repo
@@ -27,36 +27,9 @@ export async function modifyCommand(): Promise<void> {
   }
 
   // Handle staging
-  let hasStagedChanges = status.hasStagedChanges;
-
-  if (status.hasChanges && status.hasUnstagedChanges) {
-    // Has unstaged changes - ask what to do
-    const choice = await prompts.promptStagingChoice();
-
-    if (choice === 'cancel') {
-      output.info('Cancelled');
-      return;
-    }
-
-    if (choice === 'all') {
-      git.stageAll();
-      hasStagedChanges = true;
-      output.success('Staged all changes');
-    } else if (choice === 'select') {
-      const selectedFiles = await prompts.promptFileSelection(status.files);
-      if (selectedFiles.length === 0) {
-        if (!hasStagedChanges) {
-          output.info('No files selected');
-          return;
-        }
-        // Proceed with pre-staged files
-      } else {
-        git.stageFiles(selectedFiles);
-        hasStagedChanges = true;
-        output.success(`Staged ${selectedFiles.length} file(s)`);
-      }
-    }
-  }
+  const staging = await handleStaging(status);
+  if (staging.cancelled) return;
+  const hasStagedChanges = staging.hasStagedChanges;
 
   if (!hasStagedChanges) {
     output.error('No staged changes to amend');

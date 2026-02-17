@@ -8,7 +8,7 @@ Flo(w)Git (`fgt`) is a workflow-optimized git wrapper inspired by Graphite. Flo'
 
 ### 1. Command Naming
 - **CLI command is `fgt`**
-- Keep commands short and intuitive: `create`, `modify`, `checkout` (alias: `co`), `submit`, `sync`
+- Keep commands short and intuitive: `create`, `modify`, `checkout` (alias: `co`), `submit`, `sync`, `up`, `down`, `log`, `restack`, `todo`
 - Unknown commands fall through to git (e.g. `fgt status` → `git status`)
 
 ### 2. Testing Philosophy
@@ -25,7 +25,7 @@ Flo(w)Git (`fgt`) is a workflow-optimized git wrapper inspired by Graphite. Flo'
 - No error stack traces on user cancellation
 - Implemented via `handleCancellation` wrapper in prompts.ts
 
-### 5. Architecture Patterns
+### 4. Architecture Patterns
 
 #### Dependency Injection for Testability
 All external command execution goes through an injected `CommandExecutor`:
@@ -52,7 +52,7 @@ This allows tests to:
 - Limits length to 50 characters
 - Example: "Add user authentication" → "add-user-authentication"
 
-### 4. Stacking Model
+### 5. Stacking Model
 
 Simple parent-pointer model:
 ```
@@ -67,11 +67,11 @@ main (trunk)
 - `fgt submit` walks up the stack and submits all branches
 - `fgt submit --current` submits only current branch
 
-### 5. Code Organization
+### 6. Code Organization
 
 ```
 src/
-├── commands/          # Command implementations (create, modify, co→checkout, submit, sync)
+├── commands/          # Command implementations (create, modify, co, submit, sync, up, down, log, restack, todo)
 ├── lib/
 │   ├── executor.ts    # CommandExecutor interface & implementations
 │   ├── git.ts         # Git operations (uses executor)
@@ -83,7 +83,7 @@ src/
 └── types/             # TypeScript type definitions
 ```
 
-### 6. Common Issues & Solutions
+### 7. Common Issues & Solutions
 
 #### Issue: Tests failing with "not in a git repository"
 **Solution:** Ensure test setup calls `git init` and sets working directory
@@ -101,7 +101,7 @@ git.execGit('config user.email "test@example.com"');
 #### Issue: gh commands failing in CI
 **Solution:** Mock gh via executor - tests should never call real gh
 
-### 7. Testing Patterns
+### 8. Testing Patterns
 
 #### Test Structure
 ```typescript
@@ -143,27 +143,20 @@ mockGh.onCommand('pr create')
   .returns(JSON.stringify({ number: 123, url: '...' }));
 ```
 
-### 8. Implementation Status
+### 9. Implementation Status
 
-**Phase 1: Core Commands ✅**
+**All commands implemented:**
 - `fgt create` - Branch creation with parent tracking
 - `fgt modify` - Amend commits
 - `fgt checkout` (alias: `co`) - Smart checkout with tracked branch picker
 - `fgt submit` - Push & PR creation (with stack support)
-- `fgt sync` - Synchronize and cleanup branches
-
-**Phase 2: Stack Navigation (TODO)**
+- `fgt sync` - Synchronize and cleanup branches (detects merged/closed PRs, remote-deleted branches)
 - `fgt up` / `fgt down` - Navigate stack
-- `fgt log` - Visualize stack
+- `fgt log` - Visualize stack (multi-level tree)
 - `fgt restack` - Rebase stack
+- `fgt todo` - Interactive PR/branch dashboard
 
-**Phase 3: Enhancements (TODO)**
-- AI-generated PR descriptions
-- Linear API integration
-- Configurable trunk branch
-- Better error handling
-
-### 9. Development Workflow
+### 10. Development Workflow
 
 #### Making Changes
 ```bash
@@ -194,7 +187,7 @@ npm test -- create.test.ts
 - Use `console.log` or debugger in command files
 - Check `.git/config` to verify tracked branches and parents
 
-### 10. Future Considerations
+### 11. Future Considerations
 
 #### Performance
 - Git operations in temp repos are fast (<10ms each)
@@ -211,20 +204,19 @@ npm test -- create.test.ts
 - Show progress spinners for slow operations
 - Color-code output (green=success, red=error, yellow=warning)
 
-### 11. Key Files to Reference
+### 12. Key Files to Reference
 
 - **README.md**: Full specification of all commands
 - **DEVELOPMENT.md**: Development and testing guide
 - **src/lib/executor.ts**: Command execution abstraction
 - **tests/helpers/**: Test utilities and mocks
 
-### 12. Don't Forget
+### 13. Don't Forget
 
 - **Never use replace_all on user-facing text** - it breaks spacing
 - **Test with real git repos** - they're more reliable than mocks
 - **Keep the CLI fast** - users expect snappy responses
 - **Trunk branch is "main"** - hardcoded for now, configurable later
-- **Linear ticket regex**: `[A-Z]{2,}-\d+` (e.g., PTL-1234, PROJ-456)
 
 ## Questions to Ask When Implementing New Features
 
@@ -252,7 +244,7 @@ git commit --amend --no-edit
 git log -1 --pretty=%B
 
 # Remotes
-git fetch origin
+git fetch --prune origin
 git push -u origin <branch>
 git push --force-with-lease
 git rev-list --left-right --count origin/branch...branch

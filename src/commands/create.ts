@@ -3,6 +3,7 @@ import * as config from '../lib/config.js';
 import * as prompts from '../lib/prompts.js';
 import * as branch from '../lib/branch.js';
 import * as output from '../lib/output.js';
+import { handleStaging } from '../lib/staging.js';
 
 export async function createCommand(): Promise<void> {
   // Check if in a git repo
@@ -15,36 +16,9 @@ export async function createCommand(): Promise<void> {
   const status = git.getStatus();
 
   // Handle staging
-  let hasStagedChanges = status.hasStagedChanges;
-
-  if (status.hasChanges && status.hasUnstagedChanges) {
-    // Has unstaged changes - ask what to do
-    const choice = await prompts.promptStagingChoice();
-
-    if (choice === 'cancel') {
-      output.info('Cancelled');
-      return;
-    }
-
-    if (choice === 'all') {
-      git.stageAll();
-      hasStagedChanges = true;
-      output.success('Staged all changes');
-    } else if (choice === 'select') {
-      const selectedFiles = await prompts.promptFileSelection(status.files);
-      if (selectedFiles.length === 0) {
-        if (!hasStagedChanges) {
-          output.info('No files selected');
-          return;
-        }
-        // Proceed with pre-staged files
-      } else {
-        git.stageFiles(selectedFiles);
-        hasStagedChanges = true;
-        output.success(`Staged ${selectedFiles.length} file(s)`);
-      }
-    }
-  }
+  const staging = await handleStaging(status);
+  if (staging.cancelled) return;
+  let hasStagedChanges = staging.hasStagedChanges;
 
   // If still no staged changes, ask if they want to create an empty branch
   if (!hasStagedChanges) {

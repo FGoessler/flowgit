@@ -20,15 +20,6 @@ export function commitMessageToBranchName(message: string): string {
 }
 
 /**
- * Extract Linear ticket ID from a commit message
- * Matches patterns like PTL-1234, PROJ-123, etc.
- */
-export function extractLinearTicketId(message: string): string | null {
-  const match = message.match(/\b([A-Z]{2,}-\d+)\b/);
-  return match ? match[1] : null;
-}
-
-/**
  * Format PR title - just use the commit message as-is
  */
 export function formatPRTitle(commitMessage: string): string {

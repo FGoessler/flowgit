@@ -22,12 +22,7 @@ describe("fgt todo", () => {
   });
 
   it("should display message when no PRs or branches exist", async () => {
-    // Mock gh pr list commands to return empty arrays
-    mockExecutor
-      .onCommand(/gh pr list --search "review-requested:@me/)
-      .returns("[]");
-
-    mockExecutor.onCommand(/gh pr list --search "author:@me/).returns("[]");
+    mockExecutor.onCommand("gh pr list").returns("[]");
 
     await expect(runCommand(["todo"], testRepo)).resolves.not.toThrow();
   });
@@ -40,8 +35,9 @@ describe("fgt todo", () => {
         url: "https://github.com/user/repo/pull/123",
         headRefName: "fix-login-bug",
         isDraft: false,
+        state: "OPEN",
         reviewDecision: null,
-        statusCheckRollup: { state: "SUCCESS" },
+        statusCheckRollup: [],
       },
     ]);
 
@@ -57,8 +53,8 @@ describe("fgt todo", () => {
 
     // Mock user cancelling the selection
     await expect(
-      runCommand(["todo"], testRepo, { prompts: { choice: "cancel" } }),
-    ).resolves.not.toThrow();
+      runCommand(["todo"], testRepo, { prompts: { escape: true } }),
+    ).rejects.toThrow("process.exit(0)");
   });
 
   it("should categorize PRs correctly", async () => {
@@ -79,7 +75,7 @@ describe("fgt todo", () => {
         headRefName: "changes-requested",
         isDraft: false,
         reviewDecision: "CHANGES_REQUESTED",
-        statusCheckRollup: { state: "FAILURE" },
+        statusCheckRollup: [],
       },
       {
         number: 102,
@@ -88,7 +84,7 @@ describe("fgt todo", () => {
         headRefName: "approved-pr",
         isDraft: false,
         reviewDecision: "APPROVED",
-        statusCheckRollup: { state: "SUCCESS" },
+        statusCheckRollup: [],
       },
       {
         number: 103,
@@ -97,7 +93,7 @@ describe("fgt todo", () => {
         headRefName: "awaiting-review",
         isDraft: false,
         reviewDecision: null,
-        statusCheckRollup: { state: "PENDING" },
+        statusCheckRollup: [],
       },
     ]);
 
@@ -118,13 +114,13 @@ describe("fgt todo", () => {
     }
 
     await expect(
-      runCommand(["todo"], testRepo, { prompts: { choice: "cancel" } }),
-    ).resolves.not.toThrow();
+      runCommand(["todo"], testRepo, { prompts: { escape: true } }),
+    ).rejects.toThrow("process.exit(0)");
   });
 
   it("should handle gh CLI errors gracefully", async () => {
     // Mock gh commands to fail - should catch and continue
-    mockExecutor.onCommand(/gh pr list/).returns("[]");
+    mockExecutor.onCommand("gh pr list").returns("[]");
 
     await expect(runCommand(["todo"], testRepo)).resolves.not.toThrow();
   });
@@ -135,16 +131,16 @@ describe("fgt todo", () => {
     testRepo.writeFile("feature.ts", "feature code");
     testRepo.git("add feature.ts");
     testRepo.git('commit -m "Feature 1"');
-    testRepo.git('config flowgit.tracked "main feature-1"');
+    testRepo.git("config flowgit.tracked \"main,feature-1\"");
     testRepo.git('config flowgit.branch.feature-1.parent "main"');
 
     testRepo.git("checkout main");
 
-    mockExecutor.onCommand(/gh pr list/).returns("[]");
+    mockExecutor.onCommand("gh pr list").returns("[]");
 
     await expect(
-      runCommand(["todo"], testRepo, { prompts: { choice: "cancel" } }),
-    ).resolves.not.toThrow();
+      runCommand(["todo"], testRepo, { prompts: { escape: true } }),
+    ).rejects.toThrow("process.exit(0)");
   });
 
   it("should handle PRs with comment counts", async () => {
@@ -156,7 +152,7 @@ describe("fgt todo", () => {
         headRefName: "comments-branch",
         isDraft: false,
         reviewDecision: null,
-        statusCheckRollup: { state: "SUCCESS" },
+        statusCheckRollup: [],
       },
     ]);
 
@@ -173,8 +169,8 @@ describe("fgt todo", () => {
     mockExecutor.onCommand(/gh pr view 200 --json reviewThreads/).returns("3");
 
     await expect(
-      runCommand(["todo"], testRepo, { prompts: { choice: "cancel" } }),
-    ).resolves.not.toThrow();
+      runCommand(["todo"], testRepo, { prompts: { escape: true } }),
+    ).rejects.toThrow("process.exit(0)");
   });
 
   it("should handle different CI states", async () => {
@@ -186,7 +182,7 @@ describe("fgt todo", () => {
         headRefName: "passing-ci",
         isDraft: false,
         reviewDecision: null,
-        statusCheckRollup: { state: "SUCCESS" },
+        statusCheckRollup: [{ name: "build", status: "COMPLETED", conclusion: "SUCCESS" }],
       },
       {
         number: 302,
@@ -195,7 +191,7 @@ describe("fgt todo", () => {
         headRefName: "failing-ci",
         isDraft: false,
         reviewDecision: null,
-        statusCheckRollup: { state: "FAILURE" },
+        statusCheckRollup: [{ name: "build", status: "COMPLETED", conclusion: "FAILURE" }],
       },
       {
         number: 303,
@@ -204,7 +200,7 @@ describe("fgt todo", () => {
         headRefName: "pending-ci",
         isDraft: false,
         reviewDecision: null,
-        statusCheckRollup: { state: "PENDING" },
+        statusCheckRollup: [{ name: "build", status: "IN_PROGRESS", conclusion: null }],
       },
       {
         number: 304,
@@ -236,8 +232,8 @@ describe("fgt todo", () => {
     }
 
     await expect(
-      runCommand(["todo"], testRepo, { prompts: { choice: "cancel" } }),
-    ).resolves.not.toThrow();
+      runCommand(["todo"], testRepo, { prompts: { escape: true } }),
+    ).rejects.toThrow("process.exit(0)");
   });
 
   it("should display PRs with actions available", async () => {
@@ -264,8 +260,8 @@ describe("fgt todo", () => {
 
     // User cancels the selection
     await expect(
-      runCommand(["todo"], testRepo, { prompts: { choice: "cancel" } }),
-    ).resolves.not.toThrow();
+      runCommand(["todo"], testRepo, { prompts: { escape: true } }),
+    ).rejects.toThrow("process.exit(0)");
   });
 
   it("should display local branches with actions available", async () => {
@@ -274,15 +270,15 @@ describe("fgt todo", () => {
     testRepo.writeFile("local.ts", "local feature");
     testRepo.git("add local.ts");
     testRepo.git('commit -m "Local feature"');
-    testRepo.git('config flowgit.tracked "main local-feature"');
+    testRepo.git("config flowgit.tracked \"main,local-feature\"");
     testRepo.git('config flowgit.branch.local-feature.parent "main"');
     testRepo.git("checkout main");
 
-    mockExecutor.onCommand(/gh pr list/).returns("[]");
+    mockExecutor.onCommand("gh pr list").returns("[]");
 
     // User cancels the selection
     await expect(
-      runCommand(["todo"], testRepo, { prompts: { choice: "cancel" } }),
-    ).resolves.not.toThrow();
+      runCommand(["todo"], testRepo, { prompts: { escape: true } }),
+    ).rejects.toThrow("process.exit(0)");
   });
 });

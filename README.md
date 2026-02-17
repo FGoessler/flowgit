@@ -1,5 +1,7 @@
 # Flo(w)Git (fgt)
 
+> **WARNING:** This project was fully created by AI (Claude) and has NOT been code reviewed. Use at your own risk.
+
 **Flo(w)Git** — Flo's variant of git that flows. A workflow-optimized wrapper around git and gh CLI, inspired by Graphite, designed for fast-paced feature development with PR-based workflows.
 
 ## Overview
@@ -153,9 +155,7 @@ Pushes the current branch (and its stack) to GitHub and creates/updates pull req
 
 **PR Title Generation:**
 
-- Uses the commit message of the first commit on the branch
-- Extracts Linear ticket ID if present (e.g., "PTL-1234")
-- Format: `[PTL-1234] Commit message` or just `Commit message`
+- Uses the commit message of the first commit on the branch (after diverging from parent)
 
 **Examples:**
 
@@ -466,6 +466,57 @@ $ fgt restack
 
 ---
 
+### `fgt todo`
+
+Interactive dashboard showing PRs and branches needing your attention. Fetches data from GitHub and displays items organized by priority.
+
+**Categories (in priority order):**
+
+1. **PRs Needing Your Review** - PRs where you're requested as reviewer
+2. **Your PRs with Change Requests** - PRs with `CHANGES_REQUESTED` review decision
+3. **Your PRs Awaiting Review** - Open PRs with no review decision yet
+4. **Your Approved PRs** - PRs with `APPROVED` review decision
+5. **Your Draft PRs** - Draft PRs you authored
+6. **Local Branches (No PR)** - Tracked branches that don't have a PR yet
+
+**Indicators:**
+
+- `✓` (green) - CI passing
+- `✗` (red) - CI failing
+- `⋯` (yellow) - CI pending
+- `○` (gray) - No CI checks
+- `💬3/10` - Comment counts (resolved/total)
+- `[Draft]` - Draft PR
+
+**Actions:**
+
+After selecting a PR or branch, you can:
+- **Checkout branch** - Switch to the branch locally
+- **Open in browser** - Open the PR on GitHub
+- **Create PR** - (for local branches without a PR)
+
+**Examples:**
+
+```bash
+$ fgt todo
+✓ Loaded PRs and branches
+
+📋 PRs Needing Your Review
+  ○ #42 Fix login validation
+  ✓ #38 Add search endpoint
+
+🔴 Your PRs with Change Requests
+  ✗ #35 Refactor auth middleware
+
+⏳ Your PRs Awaiting Review
+  ✓ 💬2/5 #40 Add user dashboard
+
+🔧 Local Branches (No PR)
+  add-logging
+```
+
+---
+
 ## Configuration
 
 Configuration is stored in `.git/config` using git's native configuration.
@@ -605,43 +656,6 @@ flowgit/
 - `gh pr list --head <branch>` - Check if PR exists
 - `gh pr create --title "..." --body "..." --base <parent>` - Create PR with custom base
 - `gh pr view <number>` - View PR details
-
----
-
-## Development Roadmap
-
-### Phase 1: Core Commands (MVP)
-
-- [x] Project setup & specification
-- [x] `fgt create` - Basic branch creation (with parent tracking)
-- [x] `fgt modify` - Amend commits
-- [x] `fgt checkout` (alias: `co`) - Branch checkout
-- [x] `fgt submit` - Push & PR creation (single branch)
-- [x] `fgt sync` - Branch synchronization
-
-### Phase 2: Stacking Support
-
-- [x] `fgt submit` - Stack submission (submit all branches in stack)
-- [x] `fgt up` / `fgt down` - Stack navigation
-- [x] `fgt log` - Stack visualization
-- [x] `fgt restack` - Rebase stack
-- [x] `fgt sync` - Handle stacked branches (adopt grandparent when parent merged)
-
-### Phase 3: Enhancements
-
-- [ ] Better error handling & validation
-- [ ] Unit tests for all commands
-- [ ] Integration tests
-- [ ] Improved interactive UX
-- [ ] `fgt submit --current` flag for single-branch submit
-
-### Phase 4: Advanced Features
-
-- [ ] AI-generated PR descriptions
-- [ ] Linear API integration
-- [ ] Configurable default branch
-- [ ] Branch naming prefixes
-- [ ] Multi-level stack visualization in `fgt log`
 
 ---
 

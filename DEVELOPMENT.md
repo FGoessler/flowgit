@@ -45,7 +45,12 @@ flowgit/
 │   │   ├── modify.ts     # fgt modify
 │   │   ├── co.ts         # fgt checkout (alias: co)
 │   │   ├── submit.ts     # fgt submit
-│   │   └── sync.ts       # fgt sync
+│   │   ├── sync.ts       # fgt sync
+│   │   ├── up.ts         # fgt up
+│   │   ├── down.ts       # fgt down
+│   │   ├── log.ts        # fgt log
+│   │   ├── restack.ts    # fgt restack
+│   │   └── todo.ts       # fgt todo
 │   ├── lib/              # Utility libraries
 │   │   ├── git.ts        # Git command wrappers
 │   │   ├── gh.ts         # GitHub CLI wrappers
@@ -57,7 +62,7 @@ flowgit/
 │   │   └── index.ts
 │   └── index.ts          # CLI entry point
 ├── dist/                 # Compiled JavaScript (generated)
-├── tests/                # Tests (TODO)
+├── tests/                # Tests (142+ passing)
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -87,7 +92,7 @@ flowgit/
   - `--current` flag to submit only current branch
   - Smart force push detection
   - Creates PRs targeting parent branch
-  - Extracts Linear ticket IDs
+  - AI-generated PR descriptions via Claude CLI
 
 - ✅ `fgt sync` - Synchronize branches
   - Fetches and updates trunk
@@ -95,69 +100,34 @@ flowgit/
   - Fast-forwards branches behind remote
   - Prompts to delete merged branches
 
-### Phase 2: Stack Commands (TODO)
+### Phase 2: Stack Commands ✅
 
-- [ ] `fgt up` - Navigate to child branch
-- [ ] `fgt down` - Navigate to parent branch
-- [ ] `fgt log` - Visualize stack
-- [ ] `fgt restack` - Rebase stack
+- ✅ `fgt up` - Navigate to child branch
+- ✅ `fgt down` - Navigate to parent branch
+- ✅ `fgt log` - Visualize stack
+- ✅ `fgt restack` - Rebase stack
+- ✅ `fgt todo` - Interactive PR/branch dashboard
 
 ### Phase 3+: Future Enhancements
 
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] AI-generated PR descriptions
+- ✅ Unit tests (142+ passing)
+- ✅ Integration tests
+- ✅ AI-generated PR descriptions
+- ✅ Better error handling
 - [ ] Linear API integration
 - [ ] Configurable trunk branch
-- [ ] Better error handling
 
-## Testing Checklist
+## Testing
 
-### Test `fgt create`
-- [ ] Create branch with staged changes
-- [ ] Create branch with unstaged changes (stage all)
-- [ ] Create branch with unstaged changes (select files)
-- [ ] Create empty branch
-- [ ] Create stacked branch (from non-main branch)
-- [ ] Verify branch naming (kebab-case)
+All commands have comprehensive test suites in `tests/`. Run with:
 
-### Test `fgt modify`
-- [ ] Amend with staged changes
-- [ ] Amend with unstaged changes (stage all)
-- [ ] Amend with unstaged changes (select files)
-- [ ] Error on no commits
-- [ ] Error on no changes
-
-### Test `fgt checkout` / `fgt co`
-- [ ] Interactive checkout from tracked branches
-- [ ] Checkout by name (existing local)
-- [ ] Checkout by name (fetch from remote)
-- [ ] Error on non-existent branch
-
-### Test `fgt submit`
-- [ ] Submit single branch (new PR)
-- [ ] Submit single branch (update existing PR)
-- [ ] Submit stacked branches
-- [ ] Submit with `--current` flag
-- [ ] Force push prompt when remote ahead
-
-### Test `fgt sync`
-- [ ] Fetch and update trunk
-- [ ] Delete merged branches
-- [ ] Fast-forward branches behind remote
-- [ ] Show diverged branches
+```bash
+npm test                    # All tests
+npm run test:watch          # Watch mode
+npm test -- create.test.ts  # Specific test file
+```
 
 ## Known Issues
 
-1. **Command name**: `fgt` (no shell built-in conflict)
-2. **No tests yet**: Manual testing required
-3. **Linear integration**: Not implemented (regex detection only)
-4. **AI PR descriptions**: Not implemented
-
-## Next Steps
-
-1. Add comprehensive error handling
-2. Implement stack navigation commands (`up`, `down`, `log`, `restack`)
-3. Write unit tests
-4. Add integration tests
-5. Publish to npm for easy installation
+1. **Linear integration**: Not implemented
+2. **Configurable trunk branch**: Hardcoded to `main`

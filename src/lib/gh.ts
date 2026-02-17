@@ -119,6 +119,65 @@ export function getAllPRStatuses(): Map<string, { state: string; merged: boolean
 }
 
 /**
+ * Search for PRs using a query string.
+ * Returns parsed JSON array of PR objects.
+ */
+export function searchPRs(searchQuery: string, fields: string): any[] {
+  try {
+    const output = execGh(`pr list --search "${searchQuery}" --json ${fields} --limit 100`);
+    return JSON.parse(output);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get comment count for a PR.
+ */
+export function getPRCommentCount(prNumber: number): number {
+  try {
+    const output = execGh(`pr view ${prNumber} --json comments --jq '.comments | length'`);
+    return parseInt(output.trim()) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Get resolved review thread count for a PR.
+ */
+export function getPRResolvedThreadCount(prNumber: number): number {
+  try {
+    const output = execGh(`pr view ${prNumber} --json reviewThreads --jq '[.reviewThreads[] | select(.isResolved == true)] | length'`);
+    return parseInt(output.trim()) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Get the head branch name for a PR.
+ */
+export function getPRBranchName(prNumber: number): string {
+  const output = execGh(`pr view ${prNumber} --json headRefName --jq .headRefName`);
+  return output.trim();
+}
+
+/**
+ * Open a PR in the browser.
+ */
+export function openPRInBrowser(prNumber: number): void {
+  execGh(`pr view ${prNumber} --web`);
+}
+
+/**
+ * Open PR creation in the browser.
+ */
+export function createPRWeb(): void {
+  execGh('pr create --web');
+}
+
+/**
  * Check if gh CLI is installed and authenticated
  */
 export function isGhAuthenticated(): boolean {

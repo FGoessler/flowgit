@@ -62,13 +62,6 @@ export function removeTrackedBranch(branchName: string, cwd?: string): void {
 }
 
 /**
- * Check if a branch is tracked
- */
-export function isTracked(branchName: string, cwd?: string): boolean {
-  return getTrackedBranches(cwd).includes(branchName);
-}
-
-/**
  * Get the parent branch for a given branch
  */
 export function getParentBranch(branchName: string, cwd?: string): string | null {
