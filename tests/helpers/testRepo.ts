@@ -162,7 +162,7 @@ export class TestRepository {
     const remotePath = path.join(this.path, '..', `remote-${Date.now()}.git`);
 
     // Create bare repo
-    execSync(`git init --bare ${remotePath}`, { stdio: 'pipe' });
+    execSync(`git init --bare -b main ${remotePath}`, { stdio: 'pipe' });
 
     // Add remote to this repo
     this.git(`remote add origin ${remotePath}`);
