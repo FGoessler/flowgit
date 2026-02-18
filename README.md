@@ -11,14 +11,22 @@ Flo(w)Git simplifies common git workflows by providing smart, interactive comman
 
 ## Installation
 
+### From source
+
 ```bash
-npm install -g flowgit
+git clone https://github.com/user/flowgit.git
+cd flowgit
+npm install
+npm run build
+npm link
 ```
 
-Or run directly with npx:
+This makes the `fgt` command globally available. To uninstall later, run `npm unlink -g flowgit`.
+
+### Via npm (once published)
 
 ```bash
-npx flowgit <command>
+npm install -g flowgit
 ```
 
 ## Core Concepts
