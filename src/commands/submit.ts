@@ -123,9 +123,7 @@ async function createOrUpdatePR(branchName: string, trunk: string): Promise<void
 
   // Generate PR description using Claude CLI if available
   let prBody = '';
-  const hasClaudeCLI = claude.isClaudeInstalled();
-
-  if (hasClaudeCLI) {
+  if (claude.isClaudeInstalled()) {
     const spin = output.spinner('Generating PR description with Claude...');
     try {
       prBody = claude.generatePRDescription(branchName, parentBranch, prTitle);
@@ -133,7 +131,6 @@ async function createOrUpdatePR(branchName: string, trunk: string): Promise<void
     } catch (error: any) {
       spin.fail('Failed to generate description');
       output.warning(error.message);
-      // Continue with empty body
     }
   }
 

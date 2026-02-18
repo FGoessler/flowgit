@@ -25,12 +25,12 @@ function shellEscape(str: string): string {
 export function getPRForBranch(branchName: string): PRInfo | null {
   try {
     // Try with just the branch name first
-    let output = execGh(`pr list --head ${branchName} --json number,title,url,state,merged`);
+    let output = execGh(`pr list --head ${branchName} --json number,title,url,state,mergedAt`);
 
     // If empty, try with origin/ prefix
     if (!output || output === '[]') {
       try {
-        output = execGh(`pr list --head origin/${branchName} --json number,title,url,state,merged`);
+        output = execGh(`pr list --head origin/${branchName} --json number,title,url,state,mergedAt`);
       } catch {
         // Ignore error, will return null below
       }
@@ -51,7 +51,7 @@ export function getPRForBranch(branchName: string): PRInfo | null {
       title: pr.title,
       url: pr.url,
       state: pr.state,
-      merged: pr.merged || false,
+      merged: pr.mergedAt != null,
     };
   } catch (error) {
     // Silently return null - PR doesn't exist or can't be fetched
@@ -106,11 +106,11 @@ export function updatePRBody(prNumber: number, body: string): void {
  */
 export function getAllPRStatuses(): Map<string, { state: string; merged: boolean }> {
   try {
-    const output = execGh('pr list --state all --json headRefName,state,merged --limit 200');
+    const output = execGh('pr list --state all --json headRefName,state,mergedAt --limit 200');
     const prs = JSON.parse(output);
     const map = new Map<string, { state: string; merged: boolean }>();
     for (const pr of prs) {
-      map.set(pr.headRefName, { state: pr.state, merged: pr.merged || false });
+      map.set(pr.headRefName, { state: pr.state, merged: pr.mergedAt != null });
     }
     return map;
   } catch {
