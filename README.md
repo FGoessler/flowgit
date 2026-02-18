@@ -1,6 +1,7 @@
 # Flo(w)Git (fgt)
 
-> **WARNING:** This project was fully created by AI (Claude) and has NOT been code reviewed. Use at your own risk.
+> [!WARNING]
+> This project was fully created by AI (Claude) and has NOT been code reviewed. Use at your own risk.
 
 **Flo(w)Git** — Flo's variant of git that flows. A workflow-optimized wrapper around git and gh CLI, inspired by Graphite, designed for fast-paced feature development with PR-based workflows.
 
@@ -47,12 +48,14 @@ Branches are automatically named in `kebab-case` derived from commit messages:
 Flo(w)Git supports **stacking** - creating multiple PRs that build on top of each other. This keeps PRs small and focused while allowing you to continue working on dependent features.
 
 **How stacking works:**
+
 - Each branch can have a **parent branch** (defaults to `main`)
 - When you run `fgt create` from a branch, the new branch's parent is the current branch
 - PRs target their parent branch, not main
 - When you run `fgt submit`, it submits all branches from main to current (the entire stack)
 
 **Example stack:**
+
 ```
 main
   └─> add-api-endpoint (PR #1 → main)
@@ -61,6 +64,7 @@ main
 ```
 
 **Parent relationship:**
+
 - Stored in `.git/config` as `flowgit.branch.<branch-name>.parent`
 - Automatically set when creating a branch
 - Can be changed manually if needed
@@ -151,6 +155,7 @@ Pushes the current branch (and its stack) to GitHub and creates/updates pull req
      - Displays: `✓ Pushed changes to PR #123: <title>`
 
 **Flags:**
+
 - `fgt submit --current` - Only submit the current branch, not the full stack
 
 **PR Title Generation:**
@@ -437,6 +442,7 @@ main
 ```
 
 **Symbols:**
+
 - `(#123 ✓)` - PR exists and is open
 - `(#123 ✓ merged)` - PR was merged
 - `(no PR)` - No PR created yet
@@ -480,6 +486,7 @@ $ fgt restack
 ```
 
 **Edge Cases:**
+
 - If rebase conflicts: stop and display: `✗ Rebase conflicts. Resolve manually and run 'git rebase --continue'`
 - If already up to date: `✓ Already up to date`
 
@@ -510,6 +517,7 @@ Interactive dashboard showing PRs and branches needing your attention. Fetches d
 **Actions:**
 
 After selecting a PR or branch, you can:
+
 - **Checkout branch** - Switch to the branch locally
 - **Open in browser** - Open the PR on GitHub
 - **Create PR** - (for local branches without a PR)
