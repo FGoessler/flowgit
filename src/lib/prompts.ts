@@ -1,4 +1,4 @@
-import { select, input, confirm, checkbox } from '@inquirer/prompts';
+import { select, input, confirm, checkbox, Separator } from '@inquirer/prompts';
 import { StagingChoice, GitStatusFile } from '../types/index.js';
 import * as output from './output.js';
 
@@ -149,6 +149,26 @@ export async function promptBranchSelection(
         name: b.description,
         value: b.name,
       })),
+    });
+    return branch;
+  } catch (error) {
+    return handleCancellation(error);
+  }
+}
+
+/**
+ * Prompt for tree-structured branch selection (used by checkout)
+ */
+export async function promptTreeSelection(
+  choices: Array<{ name: string; value: string } | Separator>,
+  message: string = 'Select a branch:'
+): Promise<string> {
+  try {
+    const branch = await select({
+      message,
+      choices,
+      loop: false,
+      pageSize: 20,
     });
     return branch;
   } catch (error) {

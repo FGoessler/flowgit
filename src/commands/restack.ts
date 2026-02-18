@@ -2,8 +2,9 @@ import * as git from '../lib/git.js';
 import * as config from '../lib/config.js';
 import * as prompts from '../lib/prompts.js';
 import * as output from '../lib/output.js';
+import { showBranchPicker } from '../lib/branch-picker.js';
 
-export async function restackCommand(): Promise<void> {
+export async function restackCommand(newParent?: string): Promise<void> {
   // Check if in a git repo
   if (!git.isGitRepo()) {
     output.error('Not in a git repository');
@@ -19,8 +20,38 @@ export async function restackCommand(): Promise<void> {
     process.exit(1);
   }
 
-  // Get parent branch
-  const parentBranch = config.getParentBranch(currentBranch) || trunk;
+  // Determine the parent branch
+  let parentBranch: string;
+
+  if (newParent) {
+    // Validate branch exists
+    if (!git.branchExists(newParent)) {
+      output.error(`Branch '${newParent}' does not exist`);
+      process.exit(1);
+    }
+    if (newParent === currentBranch) {
+      output.error('Cannot reparent a branch to itself');
+      process.exit(1);
+    }
+    parentBranch = newParent;
+  } else {
+    // Show interactive picker
+    const selected = await showBranchPicker('Select new parent branch:');
+    if (!selected) {
+      output.error('No branches available');
+      process.exit(1);
+    }
+    parentBranch = selected;
+  }
+
+  // Update parent in config
+  const oldParent = config.getParentBranch(currentBranch);
+  config.setParentBranch(currentBranch, parentBranch);
+  config.addTrackedBranch(currentBranch);
+
+  if (oldParent && oldParent !== parentBranch) {
+    output.info(`Changed parent: ${oldParent} → ${parentBranch}`);
+  }
 
   // Fetch latest changes
   const fetchSpin = output.spinner('Fetching from origin...');
@@ -35,12 +66,13 @@ export async function restackCommand(): Promise<void> {
   // Update parent branch if it has a remote
   if (parentBranch !== trunk && git.hasRemote(parentBranch)) {
     try {
-      const originalBranch = git.getCurrentBranch();
       git.checkoutBranch(parentBranch);
       git.pull();
-      git.checkoutBranch(originalBranch);
+      git.checkoutBranch(currentBranch);
       output.success(`Updated ${parentBranch}`);
     } catch (error: any) {
+      // Make sure we return to the original branch
+      try { git.checkoutBranch(currentBranch); } catch {}
       output.warning(`Could not update ${parentBranch}: ${error.message}`);
     }
   }

@@ -129,11 +129,11 @@ program
   });
 
 program
-  .command('restack')
-  .description('Rebase current branch and optionally children')
-  .action(async () => {
+  .command('restack [branch]')
+  .description('Change parent and rebase current branch onto it')
+  .action(async (branch?: string) => {
     try {
-      await restackCommand();
+      await restackCommand(branch);
     } catch (error: any) {
       console.error('Error:', error.message);
       process.exit(1);

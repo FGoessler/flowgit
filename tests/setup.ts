@@ -1,8 +1,17 @@
 // Mock @inquirer/prompts for tests
 let mockAnswers: Record<string, any> = {};
 
+class MockSeparator {
+  separator: string;
+  type = 'separator' as const;
+  constructor(separator?: string) {
+    this.separator = separator ?? '────────';
+  }
+}
+
 jest.mock('@inquirer/prompts', () => ({
   __esModule: true,
+  Separator: MockSeparator,
   select: jest.fn(async (options: any) => {
     if (mockAnswers.branch !== undefined) return mockAnswers.branch;
     if (mockAnswers.choice !== undefined) return mockAnswers.choice;
@@ -12,7 +21,9 @@ jest.mock('@inquirer/prompts', () => ({
       err.name = 'ExitPromptError';
       throw err;
     }
-    return options.choices?.[0]?.value;
+    // Find first selectable choice (skip separators)
+    const firstChoice = options.choices?.find((c: any) => c.value !== undefined);
+    return firstChoice?.value;
   }),
   input: jest.fn(async (options: any) => {
     if (mockAnswers.message !== undefined) return mockAnswers.message;
