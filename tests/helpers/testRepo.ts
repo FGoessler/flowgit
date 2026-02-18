@@ -24,7 +24,7 @@ export class TestRepository {
     const repoPath = tmpObj.name;
 
     // Initialize git repo
-    execSync('git init', { cwd: repoPath, stdio: 'pipe' });
+    execSync('git init -b main', { cwd: repoPath, stdio: 'pipe' });
     execSync('git config user.name "Test User"', { cwd: repoPath, stdio: 'pipe' });
     execSync('git config user.email "test@example.com"', { cwd: repoPath, stdio: 'pipe' });
 
