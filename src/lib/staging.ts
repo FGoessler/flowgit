@@ -9,7 +9,12 @@ import * as output from './output.js';
  * May return early (via the caller checking the result) if the user cancels.
  */
 export async function handleStaging(status: GitStatus): Promise<{ hasStagedChanges: boolean; cancelled: boolean }> {
-  let hasStagedChanges = status.hasStagedChanges;
+  // If files are already staged, proceed directly without prompting
+  if (status.hasStagedChanges) {
+    return { hasStagedChanges: true, cancelled: false };
+  }
+
+  let hasStagedChanges = false;
 
   if (status.hasChanges && status.hasUnstagedChanges) {
     const choice = await prompts.promptStagingChoice();

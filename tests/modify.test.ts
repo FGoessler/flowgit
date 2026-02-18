@@ -66,6 +66,28 @@ describe("fgt modify", () => {
   });
 
   describe("with unstaged changes", () => {
+    it("detects modified tracked files as unstaged", async () => {
+      // Regression test: git status --porcelain outputs " M file.txt" for
+      // modified tracked files (leading space = unstaged). The executor must
+      // preserve that leading space so getStatus correctly reports unstaged.
+      testRepo.git("checkout -b feature");
+      testRepo.writeFile("file.txt", "original");
+      testRepo.git("add file.txt");
+      testRepo.git('commit -m "Initial"');
+
+      // Modify the tracked file WITHOUT staging
+      testRepo.writeFile("file.txt", "modified");
+
+      // Act - user selects "all" to stage the unstaged modification
+      await runCommand(["modify"], testRepo, {
+        prompts: { choice: "all" },
+      });
+
+      // Assert - modification was staged and amended
+      expect(testRepo.readFile("file.txt")).toBe("modified");
+      expect(testRepo.isClean()).toBe(true);
+    });
+
     it('stages all changes when user selects "all"', async () => {
       // Arrange - create initial commit
       testRepo.git("checkout -b feature");
@@ -518,31 +540,27 @@ describe("fgt modify", () => {
       expect(testRepo.status()).toContain("file2.txt");
     });
 
-    it("prompts for staging when mix of staged and unstaged files", async () => {
+    it("skips staging prompt when files are already staged", async () => {
       // Arrange
       testRepo.git("checkout -b mixed-files");
       testRepo.writeFile("tracked.txt", "tracked");
       testRepo.git("add tracked.txt");
       testRepo.git('commit -m "Add tracked"');
 
-      const originalCommit = testRepo.git("rev-parse HEAD");
-
       // Modify tracked and add untracked
       testRepo.writeFile("tracked.txt", "updated");
       testRepo.writeFile("untracked.txt", "untracked");
       testRepo.git("add tracked.txt"); // Stage tracked, leave untracked unstaged
 
-      // Act - prompt shows because of unstaged untracked.txt, user cancels
-      await runCommand(["modify"], testRepo, {
-        prompts: { choice: "cancel" },
-      });
+      // Act - no prompt because tracked.txt is already staged
+      await runCommand(["modify"], testRepo);
 
-      // Assert - commit unchanged because user cancelled
-      expect(testRepo.git("rev-parse HEAD")).toBe(originalCommit);
+      // Assert - only staged file is amended, untracked still present
+      expect(testRepo.readFile("tracked.txt")).toBe("updated");
       expect(testRepo.status()).toContain("untracked.txt");
     });
 
-    it("stages all when mix of staged and unstaged and user selects all", async () => {
+    it("only amends pre-staged files when mix of staged and unstaged", async () => {
       // Arrange
       testRepo.git("checkout -b mixed-all");
       testRepo.writeFile("tracked.txt", "tracked");
@@ -554,15 +572,12 @@ describe("fgt modify", () => {
       testRepo.writeFile("untracked.txt", "untracked");
       testRepo.git("add tracked.txt"); // Stage tracked only
 
-      // Act - prompt shows, user selects "all" to stage everything
-      await runCommand(["modify"], testRepo, {
-        prompts: { choice: "all" },
-      });
+      // Act - no prompt, amends with pre-staged files only
+      await runCommand(["modify"], testRepo);
 
-      // Assert - both files amended into commit
-      expect(testRepo.isClean()).toBe(true);
+      // Assert - staged file amended, unstaged file remains
       expect(testRepo.readFile("tracked.txt")).toBe("updated");
-      expect(testRepo.readFile("untracked.txt")).toBe("untracked");
+      expect(testRepo.status()).toContain("untracked.txt");
     });
 
     it("handles amending with empty file", async () => {

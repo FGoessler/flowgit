@@ -58,7 +58,7 @@ export class MockExecutor implements CommandExecutor {
         stdio: ['pipe', 'pipe', 'pipe'],
       })
         .toString()
-        .trim();
+        .trimEnd();
     } catch (error: any) {
       throw new Error(`Command failed: ${command}\n${error.message}`);
     }

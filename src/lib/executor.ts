@@ -25,7 +25,7 @@ export class RealCommandExecutor implements CommandExecutor {
         stdio: ['pipe', 'pipe', 'pipe'],
       };
 
-      return execSync(command, execOptions).toString().trim();
+      return execSync(command, execOptions).toString().trimEnd();
     } catch (error: any) {
       if (error.status !== 0) {
         throw new Error(`Command failed: ${command}\n${error.message}`);
