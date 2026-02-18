@@ -12,6 +12,7 @@ import { downCommand } from './commands/down.js';
 import { logCommand } from './commands/log.js';
 import { restackCommand } from './commands/restack.js';
 import { todoCommand } from './commands/todo.js';
+import { comCommand } from './commands/com.js';
 
 const program = new Command();
 
@@ -151,7 +152,19 @@ program
     }
   });
 
-const KNOWN_COMMANDS = ['create', 'modify', 'checkout', 'co', 'submit', 'sync', 'up', 'down', 'log', 'restack', 'todo'];
+program
+  .command('com')
+  .description('Checkout main branch and pull latest')
+  .action(async () => {
+    try {
+      await comCommand();
+    } catch (error: any) {
+      console.error('Error:', error.message);
+      process.exit(1);
+    }
+  });
+
+const KNOWN_COMMANDS = ['create', 'modify', 'checkout', 'co', 'submit', 'sync', 'up', 'down', 'log', 'restack', 'todo', 'com'];
 
 const firstArg = process.argv[2];
 if (firstArg && !firstArg.startsWith('-') && !KNOWN_COMMANDS.includes(firstArg)) {

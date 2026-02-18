@@ -276,6 +276,25 @@ $ fgt co remote-branch
 
 ---
 
+### `fgt com`
+
+Shortcut to checkout the main (trunk) branch and pull latest changes. Equivalent to `git checkout main && git pull`.
+
+**Behavior:**
+
+1. Checks out the trunk branch (`main`)
+2. If the trunk has a remote tracking branch: pulls latest changes
+3. Displays: `✓ Switched to main and pulled latest`
+
+**Examples:**
+
+```bash
+$ fgt com
+✓ Switched to main and pulled latest
+```
+
+---
+
 ### `fgt sync`
 
 Synchronizes tracked branches with remote and cleans up merged branches.
